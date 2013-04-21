@@ -257,6 +257,7 @@ CCFTST         88 WS-CKGLCARD-SECUSSFUL VALUE 00.
 CCFTST         88 WS-CKGLCARD-EOF       VALUE 10.
 CCFTST         88 WS-CKGLCARD-ACCEPTABLE VALUE 00 10.
 CCFTST         EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+                 01 WRONG-BRANCH PIC X(5).
 CCFTST           01 GLIF-JRNL-NO      PIC X(9).
                  01 NUM-OF-RECORDS   PIC 9(2).
                  01 SUM-40701-AMT    PIC S9(14)V9(3).
@@ -382,6 +383,7 @@ CCFTST     PERFORM OPEN-FILE
            PERFORM WRITE-ODD-RECORDS
            PERFORM SPECIFIC-CLASSCODE-ERR
            PERFORM SPEC-AMT-ERR
+           PERFORM ANALYSIS-989XX-GLIF
            PERFORM CLOSE-FILE
            STOP RUN.
        WRITE-ODD-RECORDS.
@@ -390,8 +392,8 @@ CCFTST     PERFORM OPEN-FILE
                SELECT DISTINCT SUBSTR(KEY_1,29,9),
                SUM(LCY_AMT),COUNT(1) FROM 
                GLIF WHERE SUBSTR(KEY_1,5,5) = :TODAY-BIN
-               AND SUBSTR(GLIF.DESCRIPTION,1,6) NOT IN ('098901',
-               '098902','098903','098904') GROUP BY 
+               AND SUBSTR(GLIF.DESCRIPTION,1,6) NOT LIKE '0989%'
+               GROUP BY 
                SUBSTR(KEY_1,29,9) HAVING MOD(COUNT(1),2) = 1
                OR SUM(LCY_AMT) != 0
            END-EXEC.
@@ -637,7 +639,8 @@ CCFTST     PERFORM OPEN-FILE
            EXIT.           
        SPEC-AMT-ERR.
            INITIALIZE GLERR-REC
-           MOVE "HERE IS FOR SUM LCY-AMT NOT = 0" TO GLERR-REC
+           MOVE "HERE IS FOR SUM LCY-AMT NOT IN CARDFILE= 0" 
+                       TO GLERR-REC
            WRITE GLERR-REC
            DISPLAY "RECORDS-NUM: " RECORDS-NUM
            PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > RECORDS-NUM
@@ -669,7 +672,148 @@ CCFTST     PERFORM OPEN-FILE
                        :NUM-OF-RECORDS
                    END-EXEC
                END-PERFORM.
-           EXIT.           
+           EXIT.
+       ANALYSIS-989XX-GLIF.
+           INITIALIZE GLERR-REC
+           MOVE "HERE IS FOR 989xx NOT = 0" TO GLERR-REC
+           WRITE GLERR-REC
+           EXEC SQL
+               DECLARE JIUBACUR CURSOR FOR
+               SELECT DISTINCT BRCH,SUM(LCY_AMT) 
+               FROM GLIF WHERE SUBSTR(GLIF.DESCRIPTION,2,3) = '989'
+               AND SUBSTR(KEY_1,5,5) = :TODAY-BIN
+               GROUP BY BRCH HAVING
+               SUM(LCY_AMT) != 0
+           END-EXEC.
+           EXEC SQL
+               OPEN JIUBACUR
+           END-EXEC.
+           EXEC SQL
+               FETCH JIUBACUR INTO :WRONG-BRANCH,:SUM-40701-AMT
+           END-EXEC.
+           IF SQLCODE NOT = 0 AND 1403
+               DISPLAY "FETCH JIUBA CUROR WRONG: "
+                SQLCODE
+               ACCEPT TODAY-DATE
+           END-IF
+           PERFORM UNTIL SQLCODE NOT = 0
+               PERFORM GET-JIUBA-DETAIL
+               EXEC SQL
+                   FETCH JIUBACUR INTO :WRONG-BRANCH,:SUM-40701-AMT
+               END-EXEC    
+           END-PERFORM.
+           EXIT.          
+       GET-JIUBA-DETAIL.
+           EXEC SQL
+               DECLARE JIUBAACUR CURSOR FOR 
+               SELECT GLIF.*,
+               NVL(JR01.JR01_DATE,0),
+               NVL(JR01.JR01_TIME,0),
+               NVL(JR01.JRNL_NO,0),
+               NVL(JR01.SEQUENCE_NO,0),
+               NVL(JR01.EDIT_MASK,0),
+               NVL(JR01.SOC,0),
+               NVL(JR01.CUSM_NO,0),
+               NVL(JR01.SYST,0),
+               NVL(JR01.TRN_TYP,0),
+               NVL(JR01.THREAD,0),
+               NVL(JR01.TRAN_DATE,0),
+               NVL(JR01.BRCH,0),
+               NVL(JR01.TERMNL,0),
+               NVL(JR01.TELLER,0),
+               NVL(JR01.TRAN_CODE,0),
+               NVL(JR01.POST_DATE,0),
+               NVL(JR01.NEW_ACC_FLG,0),
+               NVL(JR01.HOME_BRNCH,0),
+               NVL(JR01.LIM_TOL_FLAG,0),
+               NVL(JR01.ATM_SAF_FLAG,0),
+               NVL(JR01.CURRENCY_CODE,0),
+               NVL(JR01.BOR_GROUP,0),
+               NVL(JR01.DATA_01,0),
+               NVL(JR01.DATA_02,0),
+               NVL(JR01.DATA_03,0),
+               NVL(JR01.FLAG,0),
+               NVL(JR01.ERR_ENQM_FLG,0),
+               NVL(JR01.ERR_ENQV_FLG,0),
+               NVL(JR01.ERR_UNCM_FLG,0),
+               NVL(JR01.ERR_UNCV_FLG,0),
+               NVL(JR01.ERR_CHQR_FLG,0),
+               NVL(JR01.ERR_INST_FLG,0),
+               NVL(JR01.ERR_ACOT_FLG,0),
+               NVL(JR01.FROM_BASE_EQUIV,0),
+               NVL(JR01.TO_BASE_EQUIV,0),
+               NVL(JR01.TO_CURRENCY_CODE,0),
+               NVL(JR01.FROM_CURR_RATE,0),
+               NVL(JR01.TO_CURR_RATE,0),
+               NVL(JR01.ERR_GLST_FLG,0),
+               NVL(JR01.CURR_COMMISSION,0),
+               NVL(JR01.CURR_CHANGE,0),
+               NVL(JR01.RATE_TYPE,0),
+               NVL(JR01.TO_CURR_AMOUNT,0),
+               NVL(JR01.FROM_CURR_CODE,0),
+               NVL(JR01.MCURR_TRAN_CODE,0),
+               NVL(JR01.TRANSFER_TXN_BR,0),
+               NVL(JR01.ORIGINAL_TXN_IND,0),
+               NVL(JR01.ERR_TRST_FLG,0),
+               NVL(JR01.BOR_SUB_GROUP,0),
+               NVL(JR01.REPORT_MASK,0),
+               NVL(JR01.GL_CLASS_CODE,0),
+               NVL(JR01.XFER_GL_CLASS_CODE,0),
+               NVL(JR01.CGL_POSTING_IND,0),
+               NVL(JR01.INT_CAT,0),
+               NVL(JR01.BANK_NUMBER,0),
+               NVL(JR01.REGION_ID,0),
+               NVL(JR01.VIRTUAL_DATE,0),
+               NVL(JR01.SRC_APPLN_CODE,0),
+               NVL(JR01.XCURR_IND,0),
+               NVL(JR01.PROFIT_NARR,0),
+               NVL(JR01.SUP_OVERRIDE_ID,0),
+               NVL(JR01.CHANNEL_TYPE,0),
+               NVL(JR01.BUCKET_FLAG,0),
+               NVL(JR01.BUCKET_TRAN_CODE,0),
+               NVL(JR01.STLMNT_DATE,0),
+               NVL(JR01.STLMNT_TRN_TYP,0),
+               NVL(JR01.ATM_FR_BANK_ID,0),
+               NVL(JR01.ATM_FR_BRCH_NO,0),
+               NVL(JR01.ATM_TO_BANK_ID,0),
+               NVL(JR01.ATM_TO_BRCH_NO,0),
+               NVL(JR01.ATM_ATM_FEP_CD,0),
+               NVL(JR01.PROMO_NO,0),
+               NVL(JR01.ATM_TRACE_NO,0),
+               NVL(JR01.STLMNT_FLAG,0),
+               NVL(JR01.AGENCY_CODE,0),
+               NVL(JR01.PAY_CLASS,0),
+               NVL(JR01.TOT_PROC_FEE,0),
+               NVL(JR01.UNIT_PROC_FEE,0),
+               NVL(JR01.ATM_PROC_FEE,0),
+               NVL(JR01.OUT_TFR_FEE,0),
+               NVL(JR01.IN_TFR_FEE,0),
+               NVL(JR01.FISC_ORIG_FEE,0),
+               NVL(JR01.EDIT_ACTIVE_REASON,0),
+               NVL(JR01.TRAN_ACCT,0),
+               NVL(JR01.FIL01,0)               
+               FROM GLIF LEFT JOIN JR01 ON 
+               SUBSTR(GLIF.KEY_1,5,5) = JR01.POST_DATE 
+               AND SUBSTR(GLIF.KEY_1,29,9) = JR01.JRNL_NO
+               AND SUBSTR(GLIF.KEY_1,38,2) = JR01.SEQUENCE_NO
+               WHERE SUBSTR(GLIF.DESCRIPTION,2,3)='989' AND
+               GLIF.BRCH = :WRONG-BRANCH AND
+               SUBSTR(GLIF.KEY_1,5,5) = :TODAY-BIN
+           END-EXEC.
+           EXEC SQL
+               OPEN JIUBAACUR
+           END-EXEC.
+           EXEC SQL
+               FETCH JIUBAACUR INTO :GLIFR
+           END-EXEC.
+           DISPLAY "FIRST 989 CODE: " SQLCODE
+           PERFORM UNTIL SQLCODE NOT = 0
+               PERFORM MOVE-AND-WRITE
+               EXEC SQL
+                   FETCH JIUBAACUR INTO :GLIFR
+               END-EXEC
+           END-PERFORM.
+           EXIT.
        DATABASE-CONNECT.
            EXEC SQL
                CONNECT :ORACLE-ID

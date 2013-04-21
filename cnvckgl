@@ -1,0 +1,15 @@
+# FOR MIGRATION
+pgm=`basename $0`
+export DD_MFLAGS=$data/file/MFLAGS
+export DD_GLERR=$output/GLERR
+cmd="run.sh -t"
+while getopts bdft c ; do
+   case $c in
+      b) cmd="run.sh -b" ;;
+      d) cmd="run.sh -d";;
+      f) cmd="run.sh -f";;
+      t) cmd="run.sh -t";;
+   esac
+done
+shift `expr $OPTIND - 1`
+$cmd CNVCKGL
