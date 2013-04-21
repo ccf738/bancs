@@ -1,0 +1,68 @@
+#!/bin/ksh
+VALUE=`sqlplus -silent / <<!
+set pagesize 0 feedback off verify off heading off echo off
+select count(*) from cusm where not exists(select 1 from cusvcc where cusm.cust_acct_no=cusvcc.cust_no ) and 
+cusm.account_system=' ';
+exit;
+!`
+if [ -z "$VALUE" ];then
+echo "CUSM CUSVCC SAME"
+else
+echo "There are $VALUE ROWS IN CUSM BUT NOT IN CUSVCC"
+fi
+###########################################
+CUSMCOUNT=`sqlplus -silent / <<!
+set pagesize 0 feedback off verify off heading off echo off
+select count(*) from cusm where account_system=' '; 
+exit;
+!`
+echo "There are $CUSMCOUNT rows in cusm"
+#
+CUSVAA=`sqlplus -silent / <<!
+set pagesize 0 feedback off verify off heading off echo off
+select count(*) from cusvaa; 
+exit;
+!`
+echo "There are $CUSVAA rows in cusvaa"
+#
+CUSVD1=`sqlplus -silent / <<!
+set pagesize 0 feedback off verify off heading off echo off
+select count(*) from cusvd1; 
+exit;
+!`
+echo "There are $CUSVD1 rows in cusvd1"
+#
+CUSVDD=`sqlplus -silent / <<!
+set pagesize 0 feedback off verify off heading off echo off
+select count(*) from cusvdd;
+exit;
+!`
+echo "There are $CUSVDD rows in cusvdd"
+#
+CUMI=`sqlplus -silent / <<!
+set pagesize 0 feedback off verify off heading off echo off
+select count(*) from CUMI;
+exit;
+!`
+echo "There are $CUMI rows in cumi"
+#####################################
+companyCustomerIncusm=`sqlplus -silent / <<!
+set pagesize 0 feedback off verify off heading off echo off
+select count(*) from cusm where customer_type='02'; 
+exit;
+!`
+CUSVD4=`sqlplus -silent / <<!
+set pagesize 0 feedback off verify off heading off echo off
+select count(*) from cusvd4;
+exit;
+!`
+echo "There are $companyCustomerIncusm company customers in cusm and $CUSVD4 rows in cusvd4"
+###############################################################################
+wc -l $input/VPCARD | read cardtot filename
+echo "$filename HAS $cardtot LINES"
+grep '1$' $input/VPCARD | wc -l | read ciTiaoKa filenae
+echo "you $ciTiaoKa zhang ci tiao ka"
+grep '2$' $input/VPCARD | wc -l | read gongJiJin filename
+echo "you $gongJiJin zhang gong ji jin lan ming ka"
+grep '3$' $input/VPCARD | wc -l | read yinLian filename
+echo "you $yinLian zhang cheng du feng hang yin lian ka" 

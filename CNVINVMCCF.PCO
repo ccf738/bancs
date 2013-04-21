@@ -1,0 +1,243 @@
+      ******************************************
+        IDENTIFICATION DIVISION.
+      ******************************************
+      *
+       PROGRAM-ID.    CNVINVM.
+       AUTHOR.        LG.
+      *
+      ******************************************
+       ENVIRONMENT    DIVISION.
+      ******************************************
+      *
+      ****************************************** 
+       INPUT-OUTPUT   SECTION.
+      ******************************************
+      *
+       FILE-CONTROL.
+      *
+           SELECT INQCNTT1      ASSIGN       TO EXTERNAL INQCNTT1
+                                ORGANIZATION LINE SEQUENTIAL
+                                FILE STATUS  IS WS-INQCNTT1-STATUS.
+           SELECT INVM          ASSIGN       TO EXTERNAL INVM
+                                ORGANIZATION IS SEQUENTIAL
+                                FILE STATUS  IS WS-INVM-STATUS. 
+           SELECT INVE          ASSIGN       TO EXTERNAL INVE
+                                ORGANIZATION IS SEQUENTIAL
+                                FILE STATUS  IS WS-INVE-STATUS.    
+           SELECT INQATM        ASSIGN       TO EXTERNAL INQATM
+                                ORGANIZATION LINE SEQUENTIAL
+                                FILE STATUS  IS WS-INQATM-STATUS.                                
+      *
+      ******************************************
+       DATA DIVISION.
+      ******************************************
+      *
+       FILE SECTION.
+      *
+       FD  INQCNTT1     RECORDING MODE IS F. 
+           COPY         INCCNT.
+       FD  INVM         RECORDING MODE IS F. 
+         01  DBIOMOD-RECORD-INVM.
+             COPY INVMMAST IN LIBRYCNV.
+             03 INVM-END-1 PIC XX.
+             03 INVM-END PIC X.           
+       FD  INVE         RECORDING MODE IS F. 
+           01  DBIOMOD-RECORD-INVE.                                                 
+               COPY INVEMAST IN LIBRYCNV.                   
+               03 INVE-END PIC X.   
+       FD  INQATM     RECORDING MODE IS F. 
+           01 ATM-ACCT    PIC 9(16).
+      *
+      ******************************************
+       WORKING-STORAGE SECTION.
+      ******************************************
+      *
+      ******************************************
+      * FILE-CNVINVM1  : FILE NAME OF INQCNTT1 *
+      ******************************************
+      *
+      *
+      ****************************
+      *  FILE & PROCESS STATUS   *
+      ****************************
+      *
+       01 AMT-RELATED-COUNT                 PIC 9(9) VALUE 0.
+       01 PREVIOUS-ACCOUNT-NO               PIC 9(16).
+       01 CNT-INQCNTT1-READ                 PIC 9(10).
+       01 CNT-INVM-REWRITE                  PIC 9(10).
+       01 CNT-INVE-REWRITE                  PIC 9(10).
+       01 WS-FILE-STS-AREA.
+          03 WS-INQCNTT1-STATUS             PIC 9(02)    VALUE 00.
+             88 WS-INQCNTT1-SUCCESSFUL      VALUE 00.
+             88 WS-INQCNTT1-EOF             VALUE 10.
+             88 WS-INQCNTT1-ACCEPTABLE      VALUE 00 10.
+          03 WS-INVM-STATUS                 PIC 9(02)    VALUE 00.
+             88 WS-INVM-SUCCESSFUL          VALUE 00.
+             88 WS-INVM-EOF                 VALUE 10.
+             88 WS-INVM-ACCEPTABLE          VALUE 00 10.
+          03 WS-INVE-STATUS                 PIC 9(02)    VALUE 00.
+             88 WS-INVE-SUCCESSFUL          VALUE 00.
+             88 WS-INVE-EOF                 VALUE 10.
+             88 WS-INVE-ACCEPTABLE          VALUE 00 10.
+          03 WS-INQATM-STATUS               PIC 9(02)    VALUE 00.
+             88 WS-INQATM-SUCCESSFUL        VALUE 00.
+             88 WS-INQATM-EOF               VALUE 10.
+             88 WS-INQATM-ACCEPTABLE        VALUE 00 10.
+      *
+      *-----------------------------------------
+      *    WORKING VARIABLIES                  *
+      *-----------------------------------------
+      *
+PHLI38 01 WS-DATE-BIN                       PIC S9(9) BINARY.
+          COPY UT1999CA IN LIBRYMIS.
+PHLI38    COPY UT0030CA IN LIBRYMIS.
+      ******************************************
+       PROCEDURE DIVISION.
+      ******************************************
+      *
+       A000-MAIN-PROC.
+      *     
+           PERFORM     A000-INITIALIZE
+           PERFORM     B000-MAIN-PROCESS
+           PERFORM     UPDATE-INVM-ATM
+           PERFORM     Z099-PGM-END
+           .
+      *
+      ******************************************
+      *    INITIAL PROCESS ROUTINE             *
+      ******************************************
+      * 
+       A000-INITIALIZE.
+      *
+           INITIALIZE                                 INCCNT
+                                                      CNT-INQCNTT1-READ
+                                                      CNT-INVM-REWRITE
+                                                      CNT-INVE-REWRITE
+           OPEN           INPUT                       INQCNTT1
+                          I-O                         INVM
+                                                      INVE
+PHLI38     MOVE 1                  TO UT1999CA-CALL-CODE.         
+PHLI38     CALL "UT1999" USING UT1999CA-CALL-AREA.                        
+PHLI38     MOVE UT1999CA-CCYYMMDD  TO UT0030-DATE-CCYYMMDD          
+PHLI38     MOVE 2                  TO UT0030-FUNCTION               
+PHLI38     CALL "UT0030" USING UT0030-FUNCTION                                  
+PHLI38                         UT0030-DATE-AREA                                 
+PHLI38                         UT0030-BINARY-DATE                               
+PHLI38     MOVE UT0030-BINARY-DATE TO WS-DATE-BIN
+           .
+           EXIT. 
+      *
+      ******************************************
+      *    MAIN PROCESS ROUTINE                *
+      ******************************************
+      *
+       B000-MAIN-PROCESS.
+      *    
+LGTEST     DISPLAY "START RUN" 
+           PERFORM S000-READ-INQCNTT1
+           PERFORM S000-READ-INVM
+           PERFORM S000-READ-INVE
+           MOVE CNT-AC-NO TO PREVIOUS-ACCOUNT-NO
+           PERFORM UNTIL WS-INQCNTT1-EOF
+              PERFORM UNTIL INVM-MEMB-CUST-AC >= CNT-AC-NO
+                         OR WS-INVM-EOF                                       
+                 PERFORM S000-READ-INVM
+                 PERFORM S000-READ-INVE                 
+              END-PERFORM
+              IF INVM-MEMB-CUST-AC = CNT-AC-NO                                  
+                 PERFORM B100-ADD-TO-INVM
+              END-IF
+              PERFORM S000-READ-INQCNTT1
+              IF CNT-AC-NO NOT = PREVIOUS-ACCOUNT-NO
+                 OR WS-INQCNTT1-EOF
+                 PERFORM S123-REWRITE-INVM
+                 PERFORM S123-REWRITE-INVE
+                 MOVE CNT-AC-NO TO PREVIOUS-ACCOUNT-NO
+              END-IF
+           END-PERFORM
+LGTEST     DISPLAY "...END" 
+           .
+           EXIT.
+      *
+CCFTST B100-ADD-TO-INVM.
+           IF CNT-NPB-VAL NOT = 0 
+              ADD CNT-NO-OF-NPBS TO INVM-NO-OF-NPBS
+              ADD CNT-NPB-VAL TO INVM-NPB-VAL
+           END-IF
+           ADD CNT-NO-OF-STOPS TO INVM-NO-OF-STOPS
+           IF CNT-STOP-WDL-IND > 0
+              MOVE 'Y'             TO INVM-STOP-WDL-IND
+              ADD 1                TO INVE-NO-OF-STOP-WDL
+           END-IF
+           IF CNT-NO-OF-HOLDS > 0
+             ADD CNT-NO-OF-HOLDS TO INVM-NO-OF-HOLDS
+           END-IF
+           IF CNT-HOLD-VAL NOT = 0
+              ADD CNT-HOLD-VAL TO INVM-HOLD-VAL
+              MOVE WS-DATE-BIN TO INVM-HOLD-DT
+           END-IF
+           IF CNT-NOTICE > 0
+              MOVE CNT-NOTICE TO INVM-CLIENT-CONTACT-FLAG
+           END-IF.
+      *
+      ******************************************
+      *    READ FILE INQCNTT1   ROUTINE        *
+      ******************************************
+      *
+       S123-REWRITE-INVM.
+           REWRITE DBIOMOD-RECORD-INVM
+           IF NOT WS-INVM-ACCEPTABLE
+              DISPLAY "ACCOUNT: " INVM-MEMB-CUST-AC
+                "NOT UPDATE " WS-INVM-STATUS
+           END-IF
+           ADD 1 TO CNT-INVM-REWRITE. 
+       S123-REWRITE-INVE.
+           REWRITE DBIOMOD-RECORD-INVE
+           ADD 1 TO CNT-INVE-REWRITE.         
+       S000-READ-INQCNTT1.
+      *
+           READ                                 INQCNTT1
+           ADD 1 TO CNT-INQCNTT1-READ
+           .
+           EXIT.
+       S000-READ-INVM.
+           READ INVM
+           EXIT.
+       S000-READ-INVE.
+            READ INVE
+            EXIT.      
+       UPDATE-INVM-ATM.
+           CLOSE INVM
+                 INVE.
+           OPEN INPUT INQATM.
+           OPEN I-O INVM.
+           READ INQATM
+           PERFORM S000-READ-INVM
+           PERFORM UNTIL WS-INQATM-EOF
+              PERFORM UNTIL INVM-MEMB-CUST-AC >= ATM-ACCT
+                         OR WS-INVM-EOF                                       
+                 PERFORM S000-READ-INVM
+              END-PERFORM
+              IF INVM-MEMB-CUST-AC = ATM-ACCT
+                 ADD 1 TO AMT-RELATED-COUNT
+                 MOVE '1' TO INVM-ATM-ACCT-FLAG
+                 PERFORM S123-REWRITE-INVM
+              END-IF
+              READ INQATM
+           END-PERFORM.
+           EXIT.           
+      *
+       Z099-PGM-END.
+           COMPUTE CNT-INQCNTT1-READ = CNT-INQCNTT1-READ - 1
+           DISPLAY "CNT-INQCNTT1-READ: " CNT-INQCNTT1-READ 
+           DISPLAY "CNT-INVM-REWRITE:  "  CNT-INVM-REWRITE
+           DISPLAY "CNT-INVE-REWRITE:  "  CNT-INVE-REWRITE
+           DISPLAY "AMT FLAG = ACCOUT: "  AMT-RELATED-COUNT
+           CLOSE INQCNTT1
+                 INVM
+                 INQATM.
+           STOP RUN.
+      *
+      ***************************
+      *  END PROGRAM CNVINVM1 . *
+      *************************** 

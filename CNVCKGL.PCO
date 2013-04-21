@@ -1,0 +1,975 @@
+CCFTST IDENTIFICATION DIVISION.
+CCFTST      PROGRAM-ID. CNVCKGL.
+CCFTST ENVIRONMENT DIVISION.
+CCFTST     INPUT-OUTPUT SECTION.
+CCFTST         FILE-CONTROL.
+CCFTST             SELECT GLERR ASSIGN TO EXTERNAL GLERR
+CCFTST             ORGANIZATION LINE SEQUENTIAL
+CCFTST             FILE STATUS IS WS-GLERR-STATUS.
+CCFTST             SELECT CKGLCARD ASSIGN TO EXTERNAL CKGLCARD
+CCFTST             ORGANIZATION LINE SEQUENTIAL
+CCFTST             FILE STATUS IS WS-CKGLCARD-STATUS.
+CCFTST DATA DIVISION.
+CCFTST    FILE SECTION.
+CCFTST      FD GLERR RECORDING MODE IS F.
+CCFTST         01 GLERR-REC PIC X(2600).
+CCFTST      FD CKGLCARD RECORDING MODE IS F.
+CCFTST         01 CKGLCARD-REC.
+CCFTST            03 CKGLCARD-DATE PIC X(8).
+CCFTST            03 CKGLCARD-FILLER PIC X.
+CCFTST            03 CKGLCARD-CLASS-CODE PIC X(8).
+CCFTST      WORKING-STORAGE SECTION.
+            01 C-GLIF-LCY-AMT PIC Z(13)9.9(3)-.
+            01 F-GLIFR.
+               03 F-GLIF-KEY-1 PIC X(39).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-SOC PIC X(8).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-BRCH PIC X(9).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-FCY-CODE PIC X(13).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-GL-CLASS-CODE PIC X(25).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-DESCRIPTION  PIC X(30).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-POSTING-IND PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-TRANS-DATE PIC X(15).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-LCY-AMT PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-FCY-AMT PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-REVERSAL-CODE PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-REVERSAL-DATE PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-GLIF-REFERENCES PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-SOURCE-APPLN PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-PS-JOURNAL-ID PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-PS-JOURNAL-NBR PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-CNTL-CENTRE PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-LCY-NPV-AMT PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-FCY-NPV-AMT PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-PROFIT-CNTR-NARR PIC X(21).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-ERROR-NO PIC X(13).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-CORRECTION-TYPE PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-GLIF-FIL01 PIC X(70).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-JR01-DATE PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-JR01-TIME PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-JRNL-NO PIC X(12).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-SEQUENCE-NO PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-EDIT-MASK PIC X(36).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-SOC PIC X(8).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-CUSM-NO PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-SYST PIC X(9).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TRN-TYP PIC X(12).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-THREAD PIC X(11).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TRAN-DATE PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-BRCH PIC X(9).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TERMNL PIC X(11).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TELLER PIC X(11).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TRAN-CODE PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-POST-DATE PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-NEW-ACC-FLG PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-HOME-BRNCH PIC X(15).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-LIM-TOL-FLAG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ATM-SAF-FLAG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-CURRENCY-CODE PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-BOR-GROUP PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-DATA-01 PIC X(254).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-DATA-02 PIC X(254).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-DATA-03 PIC X(92).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-FLAG PIC X(9).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-ENQM-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-ENQV-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-UNCM-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-UNCV-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-CHQR-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-INST-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-ACOT-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-FROM-BASE-EQUIV PIC X(21).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TO-BASE-EQUIV PIC X(21).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TO-CURRENCY-CODE PIC X(21).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-FROM-CURR-RATE PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TO-CURR-RATE PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-GLST-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-CURR-COMMISSION PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-CURR-CHANGE PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-RATE-TYPE PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TO-CURR-AMOUNT PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-FROM-CURR-CODE PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-MCURR-TRAN-CODE PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TRANSFER-TXN-BR PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ORIGINAL-TXN-IND PIC X(21).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ERR-TRST-FLG PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-BOR-SUB-GROUP PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-REPORT_MASK PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-GL-CLASS-CODE PIC X(25).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-XFER_GL-CLASS-CODE PIC X(25).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-CGL-POSTING-IND PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-INT-CAT PIC X(12).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-BANK-NUMBER PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-REGION-ID PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-VIRTUAL-DATE PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-SRC_APPLN-CODE PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-XCURR-IND PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-PROFIT-NARR PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-SUP-OVERRIDE-ID PIC X(20).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-CHANNEL-TYPE PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-BUCKET-FLAG PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-BUCKET_TRAN-CODE PIC X(21).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-STLMNT-DATE PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-STLMNT-TRN-TYP PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ATM-FR-BANK-ID PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ATM-FR-BRCH-NO PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ATM-TO-BANK-ID PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ATM-TO-BRCH-NO PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ATM-ATM-FEP-CD PIC X(19).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-PROMO-NO PIC X(13).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ATM-TRACE-NO PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-STLMNT-FLAG PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-AGENCY-CODE PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-PAY-CLASS PIC X(14).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TOT-PROC-FEE PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-UNIT-PROC-FEE PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-ATM-PROC-FEE PIC X(17).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-OUT-TFR-FEE PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-IN-TFR-FEE PIC X(15).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-FISC-ORIG-FEE PIC X(18).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-EDIT-ACTIVE-REASON PIC X(23).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-TRAN-ACCT PIC X(16).
+               03 FILLER PIC X VALUE "|".
+               03 F-JR01-FIL01 PIC X(10).
+            01 WS-L PIC 9(2).
+            01 RECORDS-NUM PIC 9(2) VALUE 0.
+            01 TODAY-DATE PIC X(9).
+            01 TODAY-BIN PIC X(5).
+            01 SPEC-CLASS-CODE OCCURS 99 TIMES
+                                   VALUE SPACES.
+               03 CARD-CLASS-CODE  PIC X(8).
+               03 CARD-DATE PIC X(8).
+               03 CARD-DATE-BIN PIC X(5).
+            COPY UT1999CA IN LIBRYMIS.
+            COPY UT0030CA IN LIBRYMIS.
+CCFTST      77  ORACLE-ID  PIC X VALUE "/".
+CCFTST      01 WS-GLERR-STATUS PIC 9(2) VALUE 00.
+CCFTST         88 WS-GLERR-SECUSSFUL VALUE 00.
+CCFTST         88 WS-GLERR-EOF       VALUE 10.
+CCFTST         88 WS-GLERR-ACCEPTABLE VALUE 00 10.
+CCFTST      01 WS-CKGLCARD-STATUS PIC 9(2) VALUE 00.
+CCFTST         88 WS-CKGLCARD-SECUSSFUL VALUE 00.
+CCFTST         88 WS-CKGLCARD-EOF       VALUE 10.
+CCFTST         88 WS-CKGLCARD-ACCEPTABLE VALUE 00 10.
+CCFTST         EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+CCFTST           01 GLIF-JRNL-NO      PIC X(9).
+                 01 NUM-OF-RECORDS   PIC 9(2).
+                 01 SUM-40701-AMT    PIC S9(14)V9(3).
+                 01 ENQURY-CLASS-CODE  PIC X(8).
+                 01 GLIFR.
+                    03 GLIF-KEY-1 PIC X(39).
+                    03 GLIF-SOC PIC X(3).
+                    03 GLIF-BRCH PIC X(5).
+                    03 GLIF-FCY-CODE PIC X(3).
+                    03 GLIF-GL-CLASS-CODE PIC X(25).
+                    03 GLIF-DESCRIPTION          PIC X(30).
+                    03 GLIF-POSTING-IND          PIC X(1).   
+                    03 GLIF-TRANS-DATE           PIC 9(9).   
+                    03 GLIF-LCY-AMT              PIC S9(14)V9(3).
+                    03 GLIF-FCY-AMT              PIC S9(14)V9(3).
+                    03 GLIF-REVERSAL-CODE        PIC X(1).   
+                    03 GLIF-REVERSAL-DATE        PIC 9(9).   
+                    03 GLIF-GLIF-REFERENCES      PIC X(16). 
+                    03 GLIF-SOURCE-APPLN         PIC X(3).   
+                    03 GLIF-PS-JOURNAL-ID        PIC X(10).  
+                    03 GLIF-PS-JOURNAL-NBR       PIC 9(9).   
+                    03 GLIF-CNTL-CENTRE          PIC X(5).   
+                    03 GLIF-LCY-NPV-AMT          PIC S9(14)V9(3).
+                    03 GLIF-FCY-NPV-AMT          PIC S9(14)V9(3).
+                    03 GLIF-PROFIT-CNTR-NARR     PIC X(16).  
+                    03 GLIF-ERROR-NO             PIC X(1).   
+                    03 GLIF-CORRECTION-TYPE      PIC X(1).   
+                    03 GLIF-FIL01                PIC X(70).
+                    03 JR01-JR01-DATE            PIC 9(9).     
+                    03 JR01-JR01-TIME            PIC X(8).     
+                    03 JR01-JRNL-NO              PIC X(9).     
+                    03 JR01-SEQUENCE-NO          PIC X(2).     
+                    03 JR01-EDIT-MASK           PIC X(36).    
+                    03 JR01-SOC                  PIC X(3).     
+                    03 JR01-CUSM-NO             PIC X(16).    
+                    03 JR01-SYST                 PIC X(3).     
+                    03 JR01-TRN-TYP              PIC X(2).     
+                    03 JR01-THREAD               PIC X(2).     
+                    03 JR01-TRAN-DATE            PIC 9(9).     
+                    03 JR01-BRCH                 PIC X(5).     
+                    03 JR01-TERMNL               PIC X(3).     
+                    03 JR01-TELLER               PIC X(7).     
+                    03 JR01-TRAN-CODE            PIC X(6).     
+                    03 JR01-POST-DATE            PIC 9(9).     
+                    03 JR01-NEW-ACC-FLG          PIC X(1).     
+                    03 JR01-HOME-BRNCH           PIC X(5).     
+                    03 JR01-LIM-TOL-FLAG         PIC X(1).     
+                    03 JR01-ATM-SAF-FLAG         PIC X(1).     
+                    03 JR01-CURRENCY-CODE        PIC X(3).     
+                    03 JR01-BOR-GROUP            PIC X(2).     
+                    03 JR01-DATA-01            PIC X(254).   
+                    03 JR01-DATA-02            PIC X(254).   
+                    03 JR01-DATA-03             PIC X(92).    
+                    03 JR01-FLAG                 PIC X(1).     
+                    03 JR01-ERR-ENQM-FLG         PIC X(1).     
+                    03 JR01-ERR-ENQV-FLG         PIC X(1).     
+                    03 JR01-ERR-UNCM-FLG         PIC X(1).     
+                    03 JR01-ERR-UNCV-FLG         PIC X(1).     
+                    03 JR01-ERR-CHQR-FLG         PIC X(1).     
+                    03 JR01-ERR-INST-FLG         PIC X(1).     
+                    03 JR01-ERR-ACOT-FLG         PIC X(1).     
+                    03 JR01-FROM-BASE-EQUIV PIC S9(14)V9(3).  
+                    03 JR01-TO-BASE-EQUIV   PIC S9(14)V9(3).  
+                    03 JR01-TO-CURRENCY-CODE     PIC X(3).     
+                    03 JR01-FROM-CURR-RATE   PIC 9(5)V9(4). 
+                    03 JR01-TO-CURR-RATE     PIC 9(5)V9(4).   
+                    03 JR01-ERR-GLST-FLG         PIC X(1).     
+                    03 JR01-CURR-COMMISSION PIC S9(14)V9(3).  
+                    03 JR01-CURR-CHANGE     PIC S9(14)V9(3).  
+                    03 JR01-RATE-TYPE            PIC X(2).     
+                    03 JR01-TO-CURR-AMOUNT  PIC S9(14)V9(3).  
+                    03 JR01-FROM-CURR-CODE       PIC X(3).     
+                    03 JR01-MCURR-TRAN-CODE      PIC 9(6).     
+                    03 JR01-TRANSFER-TXN-BR      PIC 9(5).     
+                    03 JR01-ORIGINAL-TXN-IND     PIC X(1).     
+                    03 JR01-ERR-TRST-FLG         PIC X(1).     
+                    03 JR01-BOR-SUB-GROUP        PIC X(2).     
+                    03 JR01-REPORT_MASK          PIC X(4).     
+                    03 JR01-GL-CLASS-CODE       PIC X(25).    
+                    03 JR01-XFER_GL-CLASS-CODE  PIC X(25).    
+                    03 JR01-CGL-POSTING-IND      PIC X(1).     
+                    03 JR01-INT-CAT              PIC X(4).     
+                    03 JR01-BANK-NUMBER          PIC X(4).     
+                    03 JR01-REGION-ID            PIC X(4).     
+                    03 JR01-VIRTUAL-DATE         PIC 9(9).     
+                    03 JR01-SRC_APPLN-CODE       PIC X(3).     
+                    03 JR01-XCURR-IND            PIC X(1).     
+                    03 JR01-PROFIT-NARR         PIC X(16).    
+                    03 JR01-SUP-OVERRIDE-ID      PIC X(7).     
+                    03 JR01-CHANNEL-TYPE         PIC X(2).     
+                    03 JR01-BUCKET-FLAG          PIC X(1).     
+                    03 JR01-BUCKET_TRAN-CODE     PIC X(6).     
+                    03 JR01-STLMNT-DATE          PIC 9(9).     
+                    03 JR01-STLMNT-TRN-TYP       PIC X(2).     
+                    03 JR01-ATM-FR-BANK-ID       PIC X(3).     
+                    03 JR01-ATM-FR-BRCH-NO       PIC X(5).     
+                    03 JR01-ATM-TO-BANK-ID       PIC X(3).     
+                    03 JR01-ATM-TO-BRCH-NO       PIC X(5).     
+                    03 JR01-ATM-ATM-FEP-CD       PIC X(4).     
+                    03 JR01-PROMO-NO             PIC X(2).     
+                    03 JR01-ATM-TRACE-NO        PIC X(10).    
+                    03 JR01-STLMNT-FLAG          PIC X(1).     
+                    03 JR01-AGENCY-CODE          PIC X(8).     
+                    03 JR01-PAY-CLASS            PIC X(5).     
+                    03 JR01-TOT-PROC-FEE        PIC S9(3)V9.   
+                    03 JR01-UNIT-PROC-FEE       PIC S9(3)V9.   
+                    03 JR01-ATM-PROC-FEE        PIC S9(3)V9.   
+                    03 JR01-OUT-TFR-FEE         PIC S9(3)V9.   
+                    03 JR01-IN-TFR-FEE          PIC S9(3)V9.   
+                    03 JR01-FISC-ORIG-FEE       PIC S9(3)V9.
+                    03 JR01-EDIT-ACTIVE-REASON  PIC X(14).    
+                    03 JR01-TRAN-ACCT           PIC X(16).
+                    03 JR01-FIL01               PIC X(06).
+CCFTST      EXEC SQL END DECLARE SECTION END-EXEC.
+CCFTST      EXEC SQL
+CCFTST           INCLUDE SQLCA
+CCFTST      END-EXEC.
+CCFTST PROCEDURE DIVISION.
+CCFTST     PERFORM OPEN-FILE
+           PERFORM GET-DATE-FOR-ENQUERY
+           PERFORM CREATE-FILE-HEAD
+           PERFORM DATABASE-CONNECT
+           PERFORM WRITE-ODD-RECORDS
+           PERFORM SPECIFIC-CLASSCODE-ERR
+           PERFORM SPEC-AMT-ERR
+           PERFORM CLOSE-FILE
+           STOP RUN.
+       WRITE-ODD-RECORDS.
+           EXEC SQL
+               DECLARE NUMCUR CURSOR FOR
+               SELECT DISTINCT SUBSTR(KEY_1,29,9),
+               SUM(LCY_AMT),COUNT(1) FROM 
+               GLIF WHERE SUBSTR(KEY_1,5,5) = :TODAY-BIN
+               AND SUBSTR(GLIF.DESCRIPTION,1,6) NOT IN ('098901',
+               '098902','098903','098904') GROUP BY 
+               SUBSTR(KEY_1,29,9) HAVING MOD(COUNT(1),2) = 1
+               OR SUM(LCY_AMT) != 0
+           END-EXEC.
+           EXEC SQL
+               OPEN NUMCUR
+           END-EXEC.
+           EXEC SQL
+               FETCH NUMCUR INTO :GLIF-JRNL-NO,
+               :SUM-40701-AMT,:NUM-OF-RECORDS
+           END-EXEC.
+           DISPLAY "TODAY: " TODAY-BIN
+           PERFORM UNTIL SQLCODE NOT = 0
+               PERFORM WRITE-WRONG-TO-FILE
+               EXEC SQL
+                   FETCH NUMCUR INTO :GLIF-JRNL-NO,
+                   :SUM-40701-AMT,:NUM-OF-RECORDS
+               END-EXEC
+           END-PERFORM.
+           EXIT.
+       WRITE-WRONG-TO-FILE.
+           EXEC SQL
+               DECLARE ODDCUR CURSOR FOR
+               SELECT GLIF.*,
+               NVL(JR01.JR01_DATE,0),
+               NVL(JR01.JR01_TIME,0),
+               NVL(JR01.JRNL_NO,0),
+               NVL(JR01.SEQUENCE_NO,0),
+               NVL(JR01.EDIT_MASK,0),
+               NVL(JR01.SOC,0),
+               NVL(JR01.CUSM_NO,0),
+               NVL(JR01.SYST,0),
+               NVL(JR01.TRN_TYP,0),
+               NVL(JR01.THREAD,0),
+               NVL(JR01.TRAN_DATE,0),
+               NVL(JR01.BRCH,0),
+               NVL(JR01.TERMNL,0),
+               NVL(JR01.TELLER,0),
+               NVL(JR01.TRAN_CODE,0),
+               NVL(JR01.POST_DATE,0),
+               NVL(JR01.NEW_ACC_FLG,0),
+               NVL(JR01.HOME_BRNCH,0),
+               NVL(JR01.LIM_TOL_FLAG,0),
+               NVL(JR01.ATM_SAF_FLAG,0),
+               NVL(JR01.CURRENCY_CODE,0),
+               NVL(JR01.BOR_GROUP,0),
+               NVL(JR01.DATA_01,0),
+               NVL(JR01.DATA_02,0),
+               NVL(JR01.DATA_03,0),
+               NVL(JR01.FLAG,0),
+               NVL(JR01.ERR_ENQM_FLG,0),
+               NVL(JR01.ERR_ENQV_FLG,0),
+               NVL(JR01.ERR_UNCM_FLG,0),
+               NVL(JR01.ERR_UNCV_FLG,0),
+               NVL(JR01.ERR_CHQR_FLG,0),
+               NVL(JR01.ERR_INST_FLG,0),
+               NVL(JR01.ERR_ACOT_FLG,0),
+               NVL(JR01.FROM_BASE_EQUIV,0),
+               NVL(JR01.TO_BASE_EQUIV,0),
+               NVL(JR01.TO_CURRENCY_CODE,0),
+               NVL(JR01.FROM_CURR_RATE,0),
+               NVL(JR01.TO_CURR_RATE,0),
+               NVL(JR01.ERR_GLST_FLG,0),
+               NVL(JR01.CURR_COMMISSION,0),
+               NVL(JR01.CURR_CHANGE,0),
+               NVL(JR01.RATE_TYPE,0),
+               NVL(JR01.TO_CURR_AMOUNT,0),
+               NVL(JR01.FROM_CURR_CODE,0),
+               NVL(JR01.MCURR_TRAN_CODE,0),
+               NVL(JR01.TRANSFER_TXN_BR,0),
+               NVL(JR01.ORIGINAL_TXN_IND,0),
+               NVL(JR01.ERR_TRST_FLG,0),
+               NVL(JR01.BOR_SUB_GROUP,0),
+               NVL(JR01.REPORT_MASK,0),
+               NVL(JR01.GL_CLASS_CODE,0),
+               NVL(JR01.XFER_GL_CLASS_CODE,0),
+               NVL(JR01.CGL_POSTING_IND,0),
+               NVL(JR01.INT_CAT,0),
+               NVL(JR01.BANK_NUMBER,0),
+               NVL(JR01.REGION_ID,0),
+               NVL(JR01.VIRTUAL_DATE,0),
+               NVL(JR01.SRC_APPLN_CODE,0),
+               NVL(JR01.XCURR_IND,0),
+               NVL(JR01.PROFIT_NARR,0),
+               NVL(JR01.SUP_OVERRIDE_ID,0),
+               NVL(JR01.CHANNEL_TYPE,0),
+               NVL(JR01.BUCKET_FLAG,0),
+               NVL(JR01.BUCKET_TRAN_CODE,0),
+               NVL(JR01.STLMNT_DATE,0),
+               NVL(JR01.STLMNT_TRN_TYP,0),
+               NVL(JR01.ATM_FR_BANK_ID,0),
+               NVL(JR01.ATM_FR_BRCH_NO,0),
+               NVL(JR01.ATM_TO_BANK_ID,0),
+               NVL(JR01.ATM_TO_BRCH_NO,0),
+               NVL(JR01.ATM_ATM_FEP_CD,0),
+               NVL(JR01.PROMO_NO,0),
+               NVL(JR01.ATM_TRACE_NO,0),
+               NVL(JR01.STLMNT_FLAG,0),
+               NVL(JR01.AGENCY_CODE,0),
+               NVL(JR01.PAY_CLASS,0),
+               NVL(JR01.TOT_PROC_FEE,0),
+               NVL(JR01.UNIT_PROC_FEE,0),
+               NVL(JR01.ATM_PROC_FEE,0),
+               NVL(JR01.OUT_TFR_FEE,0),
+               NVL(JR01.IN_TFR_FEE,0),
+               NVL(JR01.FISC_ORIG_FEE,0),
+               NVL(JR01.EDIT_ACTIVE_REASON,0),
+               NVL(JR01.TRAN_ACCT,0),
+               NVL(JR01.FIL01,0)
+               FROM GLIF LEFT JOIN 
+               JR01 ON SUBSTR(GLIF.KEY_1,5,5) = JR01.POST_DATE 
+               AND SUBSTR(GLIF.KEY_1,29,9) = JR01.JRNL_NO
+               AND SUBSTR(GLIF.KEY_1,38,2) = JR01.SEQUENCE_NO
+               WHERE SUBSTR(KEY_1,29,9) = :GLIF-JRNL-NO 
+               AND SUBSTR(KEY_1,5,5) = :TODAY-BIN
+           END-EXEC.
+           EXEC SQL
+               OPEN ODDCUR
+           END-EXEC.
+           EXEC SQL
+               FETCH ODDCUR INTO :GLIFR
+           END-EXEC.
+           DISPLAY "FIRST ALL CODE: " SQLCODE
+           PERFORM UNTIL SQLCODE NOT = 0
+               PERFORM MOVE-AND-WRITE
+               EXEC SQL
+                   FETCH ODDCUR INTO :GLIFR
+               END-EXEC
+           END-PERFORM.
+           EXIT.
+       SPECIFIC-CLASSCODE-ERR.
+           INITIALIZE GLERR-REC
+           MOVE "HERE IS FOR 40502000 AND 40503000" TO GLERR-REC
+           WRITE GLERR-REC
+           EXEC SQL
+               DECLARE SPECGLIFCUR CURSOR FOR
+               SELECT GLIF.*,
+               NVL(JR01.JR01_DATE,0),
+               NVL(JR01.JR01_TIME,0),
+               NVL(JR01.JRNL_NO,0),
+               NVL(JR01.SEQUENCE_NO,0),
+               NVL(JR01.EDIT_MASK,0),
+               NVL(JR01.SOC,0),
+               NVL(JR01.CUSM_NO,0),
+               NVL(JR01.SYST,0),
+               NVL(JR01.TRN_TYP,0),
+               NVL(JR01.THREAD,0),
+               NVL(JR01.TRAN_DATE,0),
+               NVL(JR01.BRCH,0),
+               NVL(JR01.TERMNL,0),
+               NVL(JR01.TELLER,0),
+               NVL(JR01.TRAN_CODE,0),
+               NVL(JR01.POST_DATE,0),
+               NVL(JR01.NEW_ACC_FLG,0),
+               NVL(JR01.HOME_BRNCH,0),
+               NVL(JR01.LIM_TOL_FLAG,0),
+               NVL(JR01.ATM_SAF_FLAG,0),
+               NVL(JR01.CURRENCY_CODE,0),
+               NVL(JR01.BOR_GROUP,0),
+               NVL(JR01.DATA_01,0),
+               NVL(JR01.DATA_02,0),
+               NVL(JR01.DATA_03,0),
+               NVL(JR01.FLAG,0),
+               NVL(JR01.ERR_ENQM_FLG,0),
+               NVL(JR01.ERR_ENQV_FLG,0),
+               NVL(JR01.ERR_UNCM_FLG,0),
+               NVL(JR01.ERR_UNCV_FLG,0),
+               NVL(JR01.ERR_CHQR_FLG,0),
+               NVL(JR01.ERR_INST_FLG,0),
+               NVL(JR01.ERR_ACOT_FLG,0),
+               NVL(JR01.FROM_BASE_EQUIV,0),
+               NVL(JR01.TO_BASE_EQUIV,0),
+               NVL(JR01.TO_CURRENCY_CODE,0),
+               NVL(JR01.FROM_CURR_RATE,0),
+               NVL(JR01.TO_CURR_RATE,0),
+               NVL(JR01.ERR_GLST_FLG,0),
+               NVL(JR01.CURR_COMMISSION,0),
+               NVL(JR01.CURR_CHANGE,0),
+               NVL(JR01.RATE_TYPE,0),
+               NVL(JR01.TO_CURR_AMOUNT,0),
+               NVL(JR01.FROM_CURR_CODE,0),
+               NVL(JR01.MCURR_TRAN_CODE,0),
+               NVL(JR01.TRANSFER_TXN_BR,0),
+               NVL(JR01.ORIGINAL_TXN_IND,0),
+               NVL(JR01.ERR_TRST_FLG,0),
+               NVL(JR01.BOR_SUB_GROUP,0),
+               NVL(JR01.REPORT_MASK,0),
+               NVL(JR01.GL_CLASS_CODE,0),
+               NVL(JR01.XFER_GL_CLASS_CODE,0),
+               NVL(JR01.CGL_POSTING_IND,0),
+               NVL(JR01.INT_CAT,0),
+               NVL(JR01.BANK_NUMBER,0),
+               NVL(JR01.REGION_ID,0),
+               NVL(JR01.VIRTUAL_DATE,0),
+               NVL(JR01.SRC_APPLN_CODE,0),
+               NVL(JR01.XCURR_IND,0),
+               NVL(JR01.PROFIT_NARR,0),
+               NVL(JR01.SUP_OVERRIDE_ID,0),
+               NVL(JR01.CHANNEL_TYPE,0),
+               NVL(JR01.BUCKET_FLAG,0),
+               NVL(JR01.BUCKET_TRAN_CODE,0),
+               NVL(JR01.STLMNT_DATE,0),
+               NVL(JR01.STLMNT_TRN_TYP,0),
+               NVL(JR01.ATM_FR_BANK_ID,0),
+               NVL(JR01.ATM_FR_BRCH_NO,0),
+               NVL(JR01.ATM_TO_BANK_ID,0),
+               NVL(JR01.ATM_TO_BRCH_NO,0),
+               NVL(JR01.ATM_ATM_FEP_CD,0),
+               NVL(JR01.PROMO_NO,0),
+               NVL(JR01.ATM_TRACE_NO,0),
+               NVL(JR01.STLMNT_FLAG,0),
+               NVL(JR01.AGENCY_CODE,0),
+               NVL(JR01.PAY_CLASS,0),
+               NVL(JR01.TOT_PROC_FEE,0),
+               NVL(JR01.UNIT_PROC_FEE,0),
+               NVL(JR01.ATM_PROC_FEE,0),
+               NVL(JR01.OUT_TFR_FEE,0),
+               NVL(JR01.IN_TFR_FEE,0),
+               NVL(JR01.FISC_ORIG_FEE,0),
+               NVL(JR01.EDIT_ACTIVE_REASON,0),
+               NVL(JR01.TRAN_ACCT,0),
+               NVL(JR01.FIL01,0)
+               FROM GLIF LEFT JOIN JR01 ON 
+               SUBSTR(GLIF.KEY_1,5,5) = JR01.POST_DATE
+               AND SUBSTR(GLIF.KEY_1,29,9) = JR01.JRNL_NO
+               AND SUBSTR(GLIF.KEY_1,38,2) = JR01.SEQUENCE_NO
+               WHERE SUBSTR(GLIF.GL_CLASS_CODE,9,8) IN 
+               ('40502000','40503000') AND 
+               SUBSTR(GLIF.KEY_1,5,5) = :TODAY-BIN
+           END-EXEC.
+           EXEC SQL
+               OPEN SPECGLIFCUR
+           END-EXEC.
+           EXEC SQL
+               FETCH SPECGLIFCUR INTO :GLIFR
+           END-EXEC.
+           DISPLAY "FIRST SPEC CODE: " SQLCODE
+           PERFORM UNTIL SQLCODE NOT = 0
+               PERFORM MOVE-AND-WRITE
+               EXEC SQL
+                   FETCH SPECGLIFCUR INTO :GLIFR
+               END-EXEC
+           END-PERFORM.
+           EXIT.           
+       SPEC-AMT-ERR.
+           INITIALIZE GLERR-REC
+           MOVE "HERE IS FOR SUM LCY-AMT NOT = 0" TO GLERR-REC
+           WRITE GLERR-REC
+           DISPLAY "RECORDS-NUM: " RECORDS-NUM
+           PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > RECORDS-NUM
+               DISPLAY "SPEC-CLASS-CODE: " SPEC-CLASS-CODE(WS-L)
+               MOVE CARD-CLASS-CODE(WS-L) TO ENQURY-CLASS-CODE
+               MOVE CARD-DATE-BIN(WS-L) TO TODAY-BIN
+               EXEC SQL
+                   DECLARE ZEROCUR CURSOR FOR
+                   SELECT SUBSTR(GLIF.KEY_1,29,9) ,SUM(GLIF.LCY_AMT),
+                   COUNT(1) FROM GLIF WHERE 
+                   SUBSTR(GLIF.GL_CLASS_CODE,9,8) = :ENQURY-CLASS-CODE
+                   AND SUBSTR(GLIF.KEY_1,5,5) = :TODAY-BIN
+                   GROUP BY
+                   SUBSTR(GLIF.KEY_1,29,9)
+                   HAVING SUM(GLIF.LCY_AMT)!=0 
+               END-EXEC
+               EXEC SQL
+                   OPEN ZEROCUR
+               END-EXEC
+               EXEC SQL
+                   FETCH ZEROCUR INTO :GLIF-JRNL-NO,:SUM-40701-AMT,
+                   :NUM-OF-RECORDS
+               END-EXEC
+               DISPLAY "FIRST AMT CODE: " SQLCODE
+               PERFORM UNTIL SQLCODE NOT = 0
+                   PERFORM WRITE-WRONG-TO-FILE
+                   EXEC SQL
+                       FETCH ZEROCUR INTO :GLIF-JRNL-NO,:SUM-40701-AMT,
+                       :NUM-OF-RECORDS
+                   END-EXEC
+               END-PERFORM.
+           EXIT.           
+       DATABASE-CONNECT.
+           EXEC SQL
+               CONNECT :ORACLE-ID
+           END-EXEC.
+           EXIT.
+       ERR-STOP-RUN.
+           ACCEPT GLIF-JRNL-NO
+           STOP RUN.
+       CLOSE-FILE.
+           CLOSE CKGLCARD
+           CLOSE GLERR 
+           IF NOT WS-GLERR-ACCEPTABLE
+              DISPLAY "CLOSE FILE GLERR ERROR STATUS: " WS-GLERR-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       OPEN-FILE.
+           OPEN OUTPUT GLERR.
+           IF NOT WS-GLERR-ACCEPTABLE
+              DISPLAY "OPEN FILE GLERR ERROR STATUS: " WS-GLERR-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           OPEN INPUT CKGLCARD.
+           IF NOT WS-CKGLCARD-ACCEPTABLE
+              DISPLAY "OPEN FILE GLERR CKGLCARD STATUS: " 
+                        WS-CKGLCARD-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       MOVE-AND-WRITE.
+           INITIALIZE GLERR-REC
+           MOVE GLIF-LCY-AMT TO C-GLIF-LCY-AMT
+           MOVE GLIF-KEY-1 TO F-GLIF-KEY-1
+           MOVE GLIF-SOC TO F-GLIF-SOC
+           MOVE GLIF-BRCH TO F-GLIF-BRCH
+           MOVE GLIF-FCY-CODE TO F-GLIF-FCY-CODE
+           MOVE GLIF-GL-CLASS-CODE TO F-GLIF-GL-CLASS-CODE
+           MOVE GLIF-DESCRIPTION TO F-GLIF-DESCRIPTION
+           MOVE GLIF-POSTING-IND TO F-GLIF-POSTING-IND
+           MOVE GLIF-TRANS-DATE TO F-GLIF-TRANS-DATE
+           MOVE C-GLIF-LCY-AMT TO F-GLIF-LCY-AMT
+           MOVE GLIF-FCY-AMT TO F-GLIF-FCY-AMT
+           MOVE GLIF-REVERSAL-CODE TO F-GLIF-REVERSAL-CODE
+           MOVE GLIF-REVERSAL-DATE TO F-GLIF-REVERSAL-DATE
+           MOVE GLIF-GLIF-REFERENCES TO F-GLIF-GLIF-REFERENCES
+           MOVE GLIF-SOURCE-APPLN TO F-GLIF-SOURCE-APPLN
+           MOVE GLIF-PS-JOURNAL-ID TO F-GLIF-PS-JOURNAL-ID
+           MOVE GLIF-PS-JOURNAL-NBR TO F-GLIF-PS-JOURNAL-NBR
+           MOVE GLIF-CNTL-CENTRE TO F-GLIF-CNTL-CENTRE
+           MOVE GLIF-LCY-NPV-AMT TO F-GLIF-LCY-NPV-AMT
+           MOVE GLIF-FCY-NPV-AMT TO F-GLIF-FCY-NPV-AMT
+           MOVE GLIF-PROFIT-CNTR-NARR TO F-GLIF-PROFIT-CNTR-NARR
+           MOVE GLIF-ERROR-NO TO F-GLIF-ERROR-NO
+           MOVE GLIF-CORRECTION-TYPE TO F-GLIF-CORRECTION-TYPE
+           MOVE GLIF-FIL01 TO F-GLIF-FIL01
+           MOVE JR01-JR01-DATE TO F-JR01-JR01-DATE
+           MOVE JR01-JR01-TIME TO F-JR01-JR01-TIME
+           MOVE JR01-JRNL-NO TO F-JR01-JRNL-NO
+           MOVE JR01-SEQUENCE-NO TO F-JR01-SEQUENCE-NO
+           MOVE JR01-EDIT-MASK(1:32) TO F-JR01-EDIT-MASK
+           MOVE JR01-SOC TO F-JR01-SOC
+           MOVE JR01-CUSM-NO TO F-JR01-CUSM-NO
+           MOVE JR01-SYST TO F-JR01-SYST
+           MOVE JR01-TRN-TYP TO F-JR01-TRN-TYP
+           MOVE JR01-THREAD TO F-JR01-THREAD
+           MOVE JR01-TRAN-DATE TO F-JR01-TRAN-DATE
+           MOVE JR01-BRCH TO F-JR01-BRCH
+           MOVE JR01-TERMNL TO F-JR01-TERMNL
+           MOVE JR01-TELLER TO F-JR01-TELLER
+           MOVE JR01-TRAN-CODE TO F-JR01-TRAN-CODE
+           MOVE JR01-POST-DATE TO F-JR01-POST-DATE
+           MOVE JR01-NEW-ACC-FLG TO F-JR01-NEW-ACC-FLG
+           MOVE JR01-HOME-BRNCH TO F-JR01-HOME-BRNCH
+           MOVE JR01-LIM-TOL-FLAG TO F-JR01-LIM-TOL-FLAG
+           MOVE JR01-ATM-SAF-FLAG TO F-JR01-ATM-SAF-FLAG
+           MOVE JR01-CURRENCY-CODE TO F-JR01-CURRENCY-CODE
+           MOVE JR01-BOR-GROUP TO F-JR01-BOR-GROUP
+           MOVE JR01-DATA-01 TO F-JR01-DATA-01
+           MOVE JR01-DATA-02 TO F-JR01-DATA-02
+           MOVE JR01-DATA-03 TO F-JR01-DATA-03
+           MOVE JR01-FLAG TO F-JR01-FLAG
+           MOVE JR01-ERR-ENQM-FLG TO F-JR01-ERR-ENQM-FLG
+           MOVE JR01-ERR-ENQV-FLG TO F-JR01-ERR-ENQV-FLG
+           MOVE JR01-ERR-UNCM-FLG TO F-JR01-ERR-UNCM-FLG
+           MOVE JR01-ERR-UNCV-FLG TO F-JR01-ERR-UNCV-FLG
+           MOVE JR01-ERR-CHQR-FLG TO F-JR01-ERR-CHQR-FLG
+           MOVE JR01-ERR-INST-FLG TO F-JR01-ERR-INST-FLG
+           MOVE JR01-ERR-ACOT-FLG TO F-JR01-ERR-ACOT-FLG
+           MOVE JR01-FROM-BASE-EQUIV TO F-JR01-FROM-BASE-EQUIV
+           MOVE JR01-TO-BASE-EQUIV TO F-JR01-TO-BASE-EQUIV
+           MOVE JR01-TO-CURRENCY-CODE TO F-JR01-TO-CURRENCY-CODE
+           MOVE JR01-FROM-CURR-RATE TO F-JR01-FROM-CURR-RATE
+           MOVE JR01-TO-CURR-RATE TO F-JR01-TO-CURR-RATE
+           MOVE JR01-ERR-GLST-FLG TO F-JR01-ERR-GLST-FLG
+           MOVE JR01-CURR-COMMISSION TO F-JR01-CURR-COMMISSION
+           MOVE JR01-CURR-CHANGE TO F-JR01-CURR-CHANGE
+           MOVE JR01-RATE-TYPE TO F-JR01-RATE-TYPE
+           MOVE JR01-TO-CURR-AMOUNT TO F-JR01-TO-CURR-AMOUNT
+           MOVE JR01-FROM-CURR-CODE TO F-JR01-FROM-CURR-CODE
+           MOVE JR01-MCURR-TRAN-CODE TO F-JR01-MCURR-TRAN-CODE
+           MOVE JR01-TRANSFER-TXN-BR TO F-JR01-TRANSFER-TXN-BR
+           MOVE JR01-ORIGINAL-TXN-IND TO F-JR01-ORIGINAL-TXN-IND
+           MOVE JR01-ERR-TRST-FLG TO F-JR01-ERR-TRST-FLG
+           MOVE JR01-BOR-SUB-GROUP TO F-JR01-BOR-SUB-GROUP
+           MOVE JR01-REPORT_MASK TO F-JR01-REPORT_MASK
+           MOVE JR01-GL-CLASS-CODE TO F-JR01-GL-CLASS-CODE
+           MOVE JR01-XFER_GL-CLASS-CODE TO F-JR01-XFER_GL-CLASS-CODE
+           MOVE JR01-CGL-POSTING-IND TO F-JR01-CGL-POSTING-IND
+           MOVE JR01-INT-CAT TO F-JR01-INT-CAT
+           MOVE JR01-BANK-NUMBER TO F-JR01-BANK-NUMBER
+           MOVE JR01-REGION-ID TO F-JR01-REGION-ID
+           MOVE JR01-VIRTUAL-DATE TO F-JR01-VIRTUAL-DATE
+           MOVE JR01-SRC_APPLN-CODE TO F-JR01-SRC_APPLN-CODE
+           MOVE JR01-XCURR-IND TO F-JR01-XCURR-IND
+           MOVE JR01-PROFIT-NARR TO F-JR01-PROFIT-NARR
+           MOVE JR01-SUP-OVERRIDE-ID TO F-JR01-SUP-OVERRIDE-ID
+           MOVE JR01-CHANNEL-TYPE TO F-JR01-CHANNEL-TYPE
+           MOVE JR01-BUCKET-FLAG TO F-JR01-BUCKET-FLAG
+           MOVE JR01-BUCKET_TRAN-CODE TO F-JR01-BUCKET_TRAN-CODE
+           MOVE JR01-STLMNT-DATE TO F-JR01-STLMNT-DATE
+           MOVE JR01-STLMNT-TRN-TYP TO F-JR01-STLMNT-TRN-TYP
+           MOVE JR01-ATM-FR-BANK-ID TO F-JR01-ATM-FR-BANK-ID
+           MOVE JR01-ATM-FR-BRCH-NO TO F-JR01-ATM-FR-BRCH-NO
+           MOVE JR01-ATM-TO-BANK-ID TO F-JR01-ATM-TO-BANK-ID
+           MOVE JR01-ATM-TO-BRCH-NO TO F-JR01-ATM-TO-BRCH-NO
+           MOVE JR01-ATM-ATM-FEP-CD TO F-JR01-ATM-ATM-FEP-CD
+           MOVE JR01-PROMO-NO TO F-JR01-PROMO-NO
+           MOVE JR01-ATM-TRACE-NO TO F-JR01-ATM-TRACE-NO
+           MOVE JR01-STLMNT-FLAG TO F-JR01-STLMNT-FLAG
+           MOVE JR01-AGENCY-CODE TO F-JR01-AGENCY-CODE
+           MOVE JR01-PAY-CLASS TO F-JR01-PAY-CLASS
+           MOVE JR01-TOT-PROC-FEE TO F-JR01-TOT-PROC-FEE
+           MOVE JR01-UNIT-PROC-FEE TO F-JR01-UNIT-PROC-FEE
+           MOVE JR01-ATM-PROC-FEE TO F-JR01-ATM-PROC-FEE
+           MOVE JR01-OUT-TFR-FEE TO F-JR01-OUT-TFR-FEE
+           MOVE JR01-IN-TFR-FEE TO F-JR01-IN-TFR-FEE
+           MOVE JR01-FISC-ORIG-FEE TO F-JR01-FISC-ORIG-FEE
+           MOVE JR01-EDIT-ACTIVE-REASON TO F-JR01-EDIT-ACTIVE-REASON
+           MOVE JR01-TRAN-ACCT TO F-JR01-TRAN-ACCT
+           MOVE JR01-FIL01 TO F-JR01-FIL01
+           MOVE F-GLIFR TO GLERR-REC
+           DISPLAY "COME HERE TO RIGHT"
+           PERFORM WRITE-GLERR.
+           EXIT.
+       WRITE-GLERR.
+           WRITE GLERR-REC
+           IF NOT WS-GLERR-ACCEPTABLE
+              DISPLAY "WRITE FILE GLERR ERROR STATUS: " WS-GLERR-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       READ-CKGLCARD.
+           READ CKGLCARD
+           IF NOT WS-CKGLCARD-ACCEPTABLE
+              DISPLAY "READ FILE CKGLCARD ERROR STATUS: "
+                        WS-CKGLCARD-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       CREATE-FILE-HEAD.
+           MOVE "GLIF-KEY-1" TO F-GLIF-KEY-1
+           MOVE "GLIF-SOC" TO F-GLIF-SOC
+           MOVE "GLIF-BRCH" TO F-GLIF-BRCH
+           MOVE "GLIF-FCY-CODE" TO F-GLIF-FCY-CODE
+           MOVE "GLIF-GL-CLASS-CODE" TO F-GLIF-GL-CLASS-CODE
+           MOVE "GLIF-DESCRIPTION" TO F-GLIF-DESCRIPTION
+           MOVE "GLIF-POSTING-IND" TO F-GLIF-POSTING-IND
+           MOVE "GLIF-TRANS-DATE" TO F-GLIF-TRANS-DATE
+           MOVE "GLIF-LCY-AMT" TO F-GLIF-LCY-AMT
+           MOVE "GLIF-FCY-AMT" TO F-GLIF-FCY-AMT
+           MOVE "GLIF-REVERSAL-CODE" TO F-GLIF-REVERSAL-CODE
+           MOVE "GLIF-REVERSAL-DATE" TO F-GLIF-REVERSAL-DATE
+           MOVE "GLIF-GLIF-REFERENCES" TO F-GLIF-GLIF-REFERENCES
+           MOVE "GLIF-SOURCE-APPLN" TO F-GLIF-SOURCE-APPLN
+           MOVE "GLIF-PS-JOURNAL-ID" TO F-GLIF-PS-JOURNAL-ID
+           MOVE "GLIF-PS-JOURNAL-NBR" TO F-GLIF-PS-JOURNAL-NBR
+           MOVE "GLIF-CNTL-CENTRE" TO F-GLIF-CNTL-CENTRE
+           MOVE "GLIF-LCY-NPV-AMT" TO F-GLIF-LCY-NPV-AMT
+           MOVE "GLIF-FCY-NPV-AMT" TO F-GLIF-FCY-NPV-AMT
+           MOVE "GLIF-PROFIT-CNTR-NARR" TO F-GLIF-PROFIT-CNTR-NARR
+           MOVE "GLIF-ERROR-NO" TO F-GLIF-ERROR-NO
+           MOVE "GLIF-CORRECTION-TYPE" TO F-GLIF-CORRECTION-TYPE
+           MOVE "GLIF-FIL01" TO F-GLIF-FIL01
+           MOVE "JR01-JR01-DATE" TO F-JR01-JR01-DATE
+           MOVE "JR01-JR01-TIME" TO F-JR01-JR01-TIME
+           MOVE "JR01-JRNL-NO" TO F-JR01-JRNL-NO
+           MOVE "JR01-SEQUENCE-NO" TO F-JR01-SEQUENCE-NO
+           MOVE "JR01-EDIT-MASK" TO F-JR01-EDIT-MASK
+           MOVE "JR01-SOC" TO F-JR01-SOC
+           MOVE "JR01-CUSM-NO" TO F-JR01-CUSM-NO
+           MOVE "JR01-SYST" TO F-JR01-SYST
+           MOVE "JR01-TRN-TYP" TO F-JR01-TRN-TYP
+           MOVE "JR01-THREAD" TO F-JR01-THREAD
+           MOVE "JR01-TRAN-DATE" TO F-JR01-TRAN-DATE
+           MOVE "JR01-BRCH" TO F-JR01-BRCH
+           MOVE "JR01-TERMNL" TO F-JR01-TERMNL
+           MOVE "JR01-TELLER" TO F-JR01-TELLER
+           MOVE "JR01-TRAN-CODE" TO F-JR01-TRAN-CODE
+           MOVE "JR01-POST-DATE" TO F-JR01-POST-DATE
+           MOVE "JR01-NEW-ACC-FLG" TO F-JR01-NEW-ACC-FLG
+           MOVE "JR01-HOME-BRNCH" TO F-JR01-HOME-BRNCH
+           MOVE "JR01-LIM-TOL-FLAG" TO F-JR01-LIM-TOL-FLAG
+           MOVE "JR01-ATM-SAF-FLAG" TO F-JR01-ATM-SAF-FLAG
+           MOVE "JR01-CURRENCY-CODE" TO F-JR01-CURRENCY-CODE
+           MOVE "JR01-BOR-GROUP" TO F-JR01-BOR-GROUP
+           MOVE "JR01-DATA-01" TO F-JR01-DATA-01
+           MOVE "JR01-DATA-02" TO F-JR01-DATA-02
+           MOVE "JR01-DATA-03" TO F-JR01-DATA-03
+           MOVE "JR01-FLAG" TO F-JR01-FLAG
+           MOVE "JR01-ERR-ENQM-FLG" TO F-JR01-ERR-ENQM-FLG
+           MOVE "JR01-ERR-ENQV-FLG" TO F-JR01-ERR-ENQV-FLG
+           MOVE "JR01-ERR-UNCM-FLG" TO F-JR01-ERR-UNCM-FLG
+           MOVE "JR01-ERR-UNCV-FLG" TO F-JR01-ERR-UNCV-FLG
+           MOVE "JR01-ERR-CHQR-FLG" TO F-JR01-ERR-CHQR-FLG
+           MOVE "JR01-ERR-INST-FLG" TO F-JR01-ERR-INST-FLG
+           MOVE "JR01-ERR-ACOT-FLG" TO F-JR01-ERR-ACOT-FLG
+           MOVE "JR01-FROM-BASE-EQUIV" TO F-JR01-FROM-BASE-EQUIV
+           MOVE "JR01-TO-BASE-EQUIV" TO F-JR01-TO-BASE-EQUIV
+           MOVE "JR01-TO-CURRENCY-CODE" TO F-JR01-TO-CURRENCY-CODE
+           MOVE "JR01-FROM-CURR-RATE" TO F-JR01-FROM-CURR-RATE
+           MOVE "JR01-TO-CURR-RATE" TO F-JR01-TO-CURR-RATE
+           MOVE "JR01-ERR-GLST-FLG" TO F-JR01-ERR-GLST-FLG
+           MOVE "JR01-CURR-COMMISSION" TO F-JR01-CURR-COMMISSION
+           MOVE "JR01-CURR-CHANGE" TO F-JR01-CURR-CHANGE
+           MOVE "JR01-RATE-TYPE" TO F-JR01-RATE-TYPE
+           MOVE "JR01-TO-CURR-AMOUNT" TO F-JR01-TO-CURR-AMOUNT
+           MOVE "JR01-FROM-CURR-CODE" TO F-JR01-FROM-CURR-CODE
+           MOVE "JR01-MCURR-TRAN-CODE" TO F-JR01-MCURR-TRAN-CODE
+           MOVE "JR01-TRANSFER-TXN-BR" TO F-JR01-TRANSFER-TXN-BR
+           MOVE "JR01-ORIGINAL-TXN-IND" TO F-JR01-ORIGINAL-TXN-IND
+           MOVE "JR01-ERR-TRST-FLG" TO F-JR01-ERR-TRST-FLG
+           MOVE "JR01-BOR-SUB-GROUP" TO F-JR01-BOR-SUB-GROUP
+           MOVE "JR01-REPORT_MASK" TO F-JR01-REPORT_MASK
+           MOVE "JR01-GL-CLASS-CODE" TO F-JR01-GL-CLASS-CODE
+           MOVE "JR01-XFER_GL-CLASS-CODE" TO F-JR01-XFER_GL-CLASS-CODE
+           MOVE "JR01-CGL-POSTING-IND" TO F-JR01-CGL-POSTING-IND
+           MOVE "JR01-INT-CAT" TO F-JR01-INT-CAT
+           MOVE "JR01-BANK-NUMBER" TO F-JR01-BANK-NUMBER
+           MOVE "JR01-REGION-ID" TO F-JR01-REGION-ID
+           MOVE "JR01-VIRTUAL-DATE" TO F-JR01-VIRTUAL-DATE
+           MOVE "JR01-SRC_APPLN-CODE" TO F-JR01-SRC_APPLN-CODE
+           MOVE "JR01-XCURR-IND" TO F-JR01-XCURR-IND
+           MOVE "JR01-PROFIT-NARR" TO F-JR01-PROFIT-NARR
+           MOVE "JR01-SUP-OVERRIDE-ID" TO F-JR01-SUP-OVERRIDE-ID
+           MOVE "JR01-CHANNEL-TYPE" TO F-JR01-CHANNEL-TYPE
+           MOVE "JR01-BUCKET-FLAG" TO F-JR01-BUCKET-FLAG
+           MOVE "JR01-BUCKET_TRAN-CODE" TO F-JR01-BUCKET_TRAN-CODE
+           MOVE "JR01-STLMNT-DATE" TO F-JR01-STLMNT-DATE
+           MOVE "JR01-STLMNT-TRN-TYP" TO F-JR01-STLMNT-TRN-TYP
+           MOVE "JR01-ATM-FR-BANK-ID" TO F-JR01-ATM-FR-BANK-ID
+           MOVE "JR01-ATM-FR-BRCH-NO" TO F-JR01-ATM-FR-BRCH-NO
+           MOVE "JR01-ATM-TO-BANK-ID" TO F-JR01-ATM-TO-BANK-ID
+           MOVE "JR01-ATM-TO-BRCH-NO" TO F-JR01-ATM-TO-BRCH-NO
+           MOVE "JR01-ATM-ATM-FEP-CD" TO F-JR01-ATM-ATM-FEP-CD
+           MOVE "JR01-PROMO-NO" TO F-JR01-PROMO-NO
+           MOVE "JR01-ATM-TRACE-NO" TO F-JR01-ATM-TRACE-NO
+           MOVE "JR01-STLMNT-FLAG" TO F-JR01-STLMNT-FLAG
+           MOVE "JR01-AGENCY-CODE" TO F-JR01-AGENCY-CODE
+           MOVE "JR01-PAY-CLASS" TO F-JR01-PAY-CLASS
+           MOVE "JR01-TOT-PROC-FEE" TO F-JR01-TOT-PROC-FEE
+           MOVE "JR01-UNIT-PROC-FEE" TO F-JR01-UNIT-PROC-FEE
+           MOVE "JR01-ATM-PROC-FEE" TO F-JR01-ATM-PROC-FEE
+           MOVE "JR01-OUT-TFR-FEE" TO F-JR01-OUT-TFR-FEE
+           MOVE "JR01-IN-TFR-FEE" TO F-JR01-IN-TFR-FEE
+           MOVE "JR01-FISC-ORIG-FEE" TO F-JR01-FISC-ORIG-FEE
+           MOVE "JR01-EDIT-ACTIVE-REASON" TO F-JR01-EDIT-ACTIVE-REASON
+           MOVE "JR01-TRAN-ACCT" TO F-JR01-TRAN-ACCT
+           MOVE "JR01-FIL01" TO F-JR01-FIL01
+           MOVE F-GLIFR TO GLERR-REC
+           PERFORM WRITE-GLERR.
+           EXIT.
+       GET-DATE-FOR-ENQUERY.
+*12345*GET MFLAGS DATE AS TODAY
+           MOVE 1 TO UT1999CA-CALL-CODE
+           CALL "UT1999" USING UT1999CA-CALL-AREA
+           MOVE UT1999CA-CCYYMMDD TO UT0030-DATE-CCYYMMDD
+           MOVE 2 TO UT0030-FUNCTION
+           CALL "UT0030" USING UT0030-FUNCTION
+                               UT0030-DATE-AREA
+                               UT0030-BINARY-DATE
+           MOVE UT0030-BINARY-DATE TO TODAY-DATE
+           MOVE TODAY-DATE(5:5) TO TODAY-BIN
+*12345*GET $card/CKGL.card for specific gl_class_code
+           PERFORM GET-SPEC-RECORDS.
+           EXIT.
+       GET-SPEC-RECORDS.
+           PERFORM READ-CKGLCARD
+           PERFORM UNTIL WS-CKGLCARD-EOF
+               ADD 1 TO RECORDS-NUM
+               MOVE CKGLCARD-CLASS-CODE TO CARD-CLASS-CODE(RECORDS-NUM)
+               MOVE CKGLCARD-DATE TO CARD-DATE(RECORDS-NUM)
+               MOVE CKGLCARD-DATE TO UT0030-DATE-CCYYMMDD
+               MOVE 2 TO UT0030-FUNCTION
+               CALL "UT0030" USING UT0030-FUNCTION
+                                   UT0030-DATE-AREA
+                                   UT0030-BINARY-DATE
+               MOVE UT0030-BINARY-DATE TO TODAY-DATE
+               MOVE TODAY-DATE(5:5) TO CARD-DATE-BIN(RECORDS-NUM)
+               MOVE CARD-DATE-BIN(1) TO TODAY-BIN
+               PERFORM READ-CKGLCARD
+           END-PERFORM.
+           EXIT.
+                                   

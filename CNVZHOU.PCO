@@ -1,0 +1,68 @@
+      ******************************************
+        IDENTIFICATION DIVISION.
+      ******************************************
+      *
+       PROGRAM-ID.    CNVINVM.
+       AUTHOR.        LG.
+      *
+      ******************************************
+       ENVIRONMENT    DIVISION.
+      ******************************************
+      *
+      ****************************************** 
+       INPUT-OUTPUT   SECTION.
+      ******************************************
+      *
+       FILE-CONTROL.
+      *
+           SELECT VPCARD      ASSIGN       TO EXTERNAL VPCARD
+                              ORGANIZATION LINE SEQUENTIAL
+                              FILE STATUS  IS WS-VPCARD-STATUS.
+       FILE SECTION.
+      *
+       FD  VPCARD     RECORDING MODE IS F. 
+       01 VPCARD-RECORD.
+          03 VPCARD-CARD-NO PIC X(20).
+          03 VPCARD-BRANCH-NO PIC 9(5).
+          03 VPCARD-123     PIC X.
+          03 VPCARD-OPERATOR PIC X(3).
+          03 VPCARD-TYPE  PIC 9.
+       WORKING-STORAGE SECTION.
+       01 WS-VPCARD-STATUS PIC 9(2) VALUE 00.
+          88 WS-VPCARD-SECUSSFUL VALUE 00.
+          88 WS-VPCARD-EOF       VALUE 10.
+          88 WS-VPCARD-ACCEPTABLE VALUE 00 10.
+       01 999-COUNT PIC 9(9) VALUE 0.
+       01 666-COUNT PIC 9(9) VALUE 0.
+       01 777-COUNT PIC 9(9) VALUE 0.
+       01 CURRENT-BR PIC 9(5) VALUE 0.
+       01 PREV-BR PIC 9(5) VALUE 0.
+       PROCEDURE DIVISION.
+           OPEN INPUT VPCARD
+           READ VPCARD
+           MOVE VPCARD-BRANCH-NO TO PREV-BR
+                                    CURRENT-BR
+           PERFORM UNTIL WS-VPCARD-EOF
+               IF CURRENT-BR = PREV-BR
+                  EVALUATE VPCARD-CARD-NO(7:3)
+                      WHEN '999'
+                        ADD 1 TO 999-COUNT
+                      WHEN '666'
+                        ADD 1 TO 666-COUNT
+                      WHEN '777'
+                        ADD 1 TO 777-COUNT
+                  END-EVALUATE
+                  READ VPCARD
+                  MOVE VPCARD-BRANCH-NO TO CURRENT-BR
+               ELSE 
+                  DISPLAY PREV-BR " " 999-COUNT " " 
+                   666-COUNT " " 777-COUNT
+                  MOVE CURRENT-BR TO PREV-BR
+                  MOVE 0 TO 999-COUNT
+                            666-COUNT
+                            777-COUNT
+               END-IF
+           END-PERFORM
+           DISPLAY PREV-BR " " 999-COUNT " " 666-COUNT " " 777-COUNT.
+               
+               
