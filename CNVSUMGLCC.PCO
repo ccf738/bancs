@@ -1,0 +1,117 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. SUMGLCC.
+       ENVIRONMENT DIVISION.
+           INPUT-OUTPUT SECTION.
+               FILE-CONTROL.
+                   SELECT GLBM ASSIGN TO EXTERNAL GLBM
+                   ORGANIZATION IS INDEXED
+                   RECORD KEY   IS GLBM-CLASS-CODE
+                   ACCESS MODE  IS DYNAMIC
+                   FILE STATUS  IS WS-GLBM-STATUS.
+       DATA DIVISION.
+          FILE SECTION.
+          FD  GLBM.
+          01 GLBM-REC.
+             03 GLBM-CLASS-CODE PIC X(25).
+             03 FILLER PIC X(2).
+             03 GLBM-MONEY  PIC Z(13)9.9(3)-.
+       WORKING-STORAGE SECTION.
+           01 ORACLE-ID PIC X VALUE '/'.
+           01 ERR-MSG  PIC X(200).
+           01 WS-GLBM-STATUS  PIC 9(02)     VALUE 00.          
+              88 WS-GLBM-SUCCESSFUL         VALUE 00.                        
+              88 WS-GLBM-EOF                VALUE 10.                        
+              88 WS-GLBM-ACCEPTABLE         VALUE 00 10 23.
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+               01 TABLE-CLASS-CODE  PIC X(25).
+               01 TABLE-MONEY PIC S9(14)V9(3).
+           EXEC SQL END DECLARE SECTION END-EXEC.
+       PROCEDURE DIVISION.
+           PERFORM OPEN-FILE
+           PERFORM DATABASE-CONNECT
+           PERFORM CREATE-GLCC-FILE
+           PERFORM CLOSE-FILE
+           STOP RUN.
+       GET-DATA-FROM-TABLE.
+           EXEC SQL
+               DECLARE GLCCCUR CURSOR FOR
+               SELECT GL_CLASS_CODE,SUM(BAL) FROM 
+               (     
+               SELECT BORM.GL_CLASS_CODE,
+               SUM(BORM.LOAN_BAL) BAL FROM  
+               BORM GROUP BY BORM.GL_CLASS_CODE  
+               UNION  
+               SELECT INVM.GL_CLASS_CODE,
+               SUM(INVM.CURR_BAL) BAL FROM  
+               INVM GROUP BY INVM.GL_CLASS_CODE  
+               UNION  
+               SELECT GLDM.GL_CLASS_CODE,
+               SUM(GLDM.CUM_CURR_VAL) BAL FROM  
+               GLDM GROUP BY GLDM.GL_CLASS_CODE  
+               UNION  
+               SELECT CTAM.GL_CLASS_CODE,
+               SUM(CTAM.CURRENT_BALANCE) BAL FROM  
+               CTAM GROUP BY CTAM.GL_CLASS_CODE 
+               ) 
+              GROUP BY GL_CLASS_CODE
+           END-EXEC.
+           EXEC SQL
+               OPEN GLCCCUR
+           END-EXEC.
+           EXEC SQL
+               FETCH GLCCCUR INTO :TABLE-CLASS-CODE,:TABLE-MONEY
+           END-EXEC.
+           EXIT.
+       CREATE-GLCC-FILE.
+           PERFORM GET-DATA-FROM-TABLE
+           PERFORM UNTIL SQLCODE NOT = 0
+               MOVE TABLE-CLASS-CODE TO GLBM-CLASS-CODE
+               MOVE TABLE-MONEY TO GLBM-MONEY
+               PERFORM WRITE-FILE
+               EXEC SQL
+                   FETCH GLCCCUR INTO :TABLE-CLASS-CODE,:TABLE-MONEY
+               END-EXEC
+           END-PERFORM.
+           EXIT.           
+       CLOSE-FILE.
+           CLOSE GLBM
+           IF NOT WS-GLBM-ACCEPTABLE
+              INITIALIZE ERR-MSG
+              STRING "CLOSE FILE GLBM ERR STATUS: "
+                     WS-GLBM-STATUS
+              DELIMITED BY SIZE INTO ERR-MSG
+              GO TO ERR-STOP
+           END-IF.
+           EXIT.
+       WRITE-FILE.
+           WRITE GLBM-REC
+           IF NOT WS-GLBM-ACCEPTABLE
+              INITIALIZE ERR-MSG
+              STRING "WRITE FILE GLBM ERR STATUS: "
+                     WS-GLBM-STATUS
+              DELIMITED BY SIZE INTO ERR-MSG
+              GO TO ERR-STOP
+           END-IF.
+           EXIT.
+       OPEN-FILE.
+           OPEN OUTPUT GLBM
+           IF NOT WS-GLBM-ACCEPTABLE
+              INITIALIZE ERR-MSG
+              STRING "OPEN FILE GLBM ERR STATUS: "
+                     WS-GLBM-STATUS
+              DELIMITED BY SIZE INTO ERR-MSG
+              GO TO ERR-STOP
+           END-IF.
+           EXIT.
+       DATABASE-CONNECT.
+           EXEC SQL
+               CONNECT :ORACLE-ID
+           END-EXEC.
+           EXIT.
+       ERR-STOP.
+           DISPLAY ERR-MSG
+           ACCEPT ORACLE-ID
+           STOP RUN.
