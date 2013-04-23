@@ -41,7 +41,7 @@
                SELECT GL_CLASS_CODE,SUM(BAL) FROM 
                (     
                SELECT BORM.GL_CLASS_CODE,
-               SUM(BORM.LOAN_BAL) BAL FROM  
+               SUM(BORM.LOAN_BAL)*-1 BAL FROM  
                BORM GROUP BY BORM.GL_CLASS_CODE  
                UNION  
                SELECT INVM.GL_CLASS_CODE,
