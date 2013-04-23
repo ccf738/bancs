@@ -1,0 +1,216 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. VALGLCC.
+       ENVIRONMENT DIVISION.
+           INPUT-OUTPUT SECTION.
+               FILE-CONTROL.
+                   SELECT YESTERDAY ASSIGN TO EXTERNAL YESTERDAY
+                   ORGANIZATION IS INDEXED
+                   RECORD KEY   IS YESTERDAY-CLASS-CODE
+                   ACCESS MODE  IS DYNAMIC
+                   FILE STATUS  IS WS-YESTERDAY-STATUS.
+                   SELECT TODAY ASSIGN TO EXTERNAL TODAY
+                   ORGANIZATION IS INDEXED
+                   RECORD KEY   IS TODAY-CLASS-CODE
+                   ACCESS MODE  IS DYNAMIC
+                   FILE STATUS  IS WS-TODAY-STATUS.
+                   SELECT WRONGGLCC ASSIGN TO EXTERNAL WRONGGLCC
+                   ORGANIZATION LINE SEQUENTIAL
+                   FILE STATUS  IS WS-WRONGGLCC-STATUS.
+                   
+       DATA DIVISION.
+          FILE SECTION.
+          FD  YESTERDAY.
+          01 YESTERDAY-REC.
+             03 YESTERDAY-CLASS-CODE PIC X(25).
+             03 FILLER PIC X(2).
+             03 YESTERDAY-MONEY  PIC Z(13)9.9(3)-.
+          FD  TODAY.
+          01 TODAY-REC.
+             03 TODAY-CLASS-CODE PIC X(25).
+             03 FILLER PIC X(2).
+             03 TODAY-MONEY  PIC Z(13)9.9(3)-.
+          FD  WRONGGLCC.
+          01 WRONGGLCC-REC.
+             03 WRONG-CLASS-CODE PIC X(25).
+             03 FILLER PIC X(2).
+             03 WRONG-YES-MONEY PIC Z(13)9.9(3)-.
+             03 FILLER PIC X(2).
+             03 WRONG-TODAY-MONEY PIC Z(13)9.9(3)-.
+             03 FILLER PIC X(2).
+             03 D-VALUE  PIC Z(13)9.9(3)-.
+             03 FILLER PIC X(2).
+             03 WRONG-GLIF-MONEY PIC Z(13)9.9(3)-.
+       WORKING-STORAGE SECTION.
+           01 SAME-MONEY PIC X.
+           01 D-VALUE-9 PIC S9(14)V9(3).
+           01 YESTERDAY-9 PIC S9(14)V9(3).
+           01 TODAY-9 PIC S9(14)V9(3).
+           01 ERR-MSG PIC X(200).
+           01 TODAY-DATE PIC X(9).
+           01 TODAY-BIN PIC X(5).
+           01 ORACLE-ID PIC X VALUE '/'.
+           01 ERR-MSG  PIC X(200).
+           COPY UT1999CA IN LIBRYMIS.
+           COPY UT0030CA IN LIBRYMIS.
+           01 WS-YESTERDAY-STATUS  PIC 9(02) VALUE 00.          
+              88 WS-YESTERDAY-SUCCESSFUL     VALUE 00.                        
+              88 WS-YESTERDAY-EOF            VALUE 10.                        
+              88 WS-YESTERDAY-ACCEPTABLE     VALUE 00 10 23.
+           01 WS-TODAY-STATUS  PIC 9(02)     VALUE 00.          
+              88 WS-TODAY-SUCCESSFUL         VALUE 00.                        
+              88 WS-TODAY-EOF                VALUE 10.                        
+              88 WS-TODAY-ACCEPTABLE         VALUE 00 10.
+              88 WS-TODAY-NOTFOUND           VALUE 23.
+           01 WS-WRONGGLCC-STATUS  PIC 9(02)     VALUE 00.          
+              88 WS-WRONGGLCC-SUCCESSFUL         VALUE 00.                        
+              88 WS-WRONGGLCC-EOF                VALUE 10.                        
+              88 WS-WRONGGLCC-ACCEPTABLE         VALUE 00 10.
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+               01 GLIF-CLASS-CODE  PIC X(25).
+               01 GLIF-MONEY PIC S9(14)V9(3).
+           EXEC SQL END DECLARE SECTION END-EXEC.
+       PROCEDURE DIVISION.
+           PERFORM GET-TODAY-DATE
+           PERFORM OPEN-FILE
+           PERFORM DATABASE-CONNECT
+           PERFORM JUDGE-GLCC-CONSISTENT
+           PERFORM CLOSE-FILE
+           STOP RUN.
+       GET-SUM-FROM-GLIF.
+           EXEC SQL
+               DECLARE SUMCUR CURSOR FOR
+               SELECT GL_CLASS_CODE,SUM(LCY_AMT)
+               FROM GLIF WHERE SUBSTR(GL_CLASS_CODE,17,8) NOT IN 
+               ('00000000','11111111')
+               AND SUBSTR(KEY_1,5,5)
+               = :TODAY-BIN 
+               GROUP BY GL_CLASS_CODE
+           END-EXEC
+           EXEC SQL  
+               OPEN SUMCUR
+           END-EXEC
+           EXEC SQL
+               FETCH SUMCUR INTO :GLIF-CLASS-CODE,:GLIF-MONEY
+           END-EXEC.
+           EXIT.
+       JUDGE-MONEY-SAME.
+           MOVE 'Y' TO SAME-MONEY
+           MOVE GLIF-CLASS-CODE TO YESTERDAY-CLASS-CODE
+                                   TODAY-CLASS-CODE
+           PERFORM GET-YESTERDAY-MONEY
+           PERFORM GET-TODAY-MONEY
+           COMPUTE D-VALUE-9 = TODAY-9 - YESTERDAY-9
+           IF D-VALUE-9 NOT = GLIF-MONEY
+              MOVE 'N' TO SAME-MONEY
+           END-IF.
+           EXIT.
+       JUDGE-GLCC-CONSISTENT.
+           PERFORM GET-SUM-FROM-GLIF
+           PERFORM UNTIL SQLCODE NOT = 0
+               PERFORM JUDGE-MONEY-SAME
+               IF SAME-MONEY = 'N'
+                  PERFORM WRITE-WRONG-FILE
+               END-IF
+               EXEC SQL
+                  FETCH SUMCUR INTO :GLIF-CLASS-CODE,:GLIF-MONEY
+               END-EXEC
+           END-PERFORM.
+           EXIT.
+       WRITE-WRONG-FILE.
+           MOVE GLIF-CLASS-CODE TO WRONG-CLASS-CODE
+           MOVE YESTERDAY-9 TO WRONG-YES-MONEY
+           MOVE TODAY-9 TO WRONG-TODAY-MONEY
+           MOVE D-VALUE-9 TO D-VALUE
+           MOVE GLIF-MONEY TO WRONG-GLIF-MONEY
+           WRITE WRONGGLCC-REC
+           IF NOT WS-WRONGGLCC-ACCEPTABLE
+              DISPLAY "WRITE FILE WRONGGLCC ERROR STATUS: " 
+              WS-WRONGGLCC-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       CLOSE-FILE.
+           CLOSE YESTERDAY
+           IF NOT WS-YESTERDAY-ACCEPTABLE
+              DISPLAY "CLOSE FILE YESTERDAY ERROR STATUS: " 
+              WS-YESTERDAY-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF
+           CLOSE TODAY
+           IF NOT WS-TODAY-ACCEPTABLE
+              DISPLAY "CLOSE FILE TODAY ERROR STATUS: " 
+              WS-TODAY-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF
+           CLOSE WRONGGLCC
+           IF NOT WS-WRONGGLCC-ACCEPTABLE
+              DISPLAY "CLOSE FILE WRONGGLCC ERROR STATUS: " 
+              WS-WRONGGLCC-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       GET-YESTERDAY-MONEY.
+           READ YESTERDAY
+           IF NOT WS-YESTERDAY-ACCEPTABLE
+              DISPLAY "READ FILE YESTERDAY ERROR STATUS: " 
+              WS-YESTERDAY-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF
+           IF WS-YESTERDAY-STATUS = 23
+              MOVE 0 TO YESTERDAY-MONEY
+           END-IF
+           MOVE YESTERDAY-MONEY TO YESTERDAY-9.
+           EXIT.
+       GET-TODAY-MONEY.
+           READ TODAY
+           IF WS-TODAY-NOTFOUND
+              DISPLAY "READ FILE TODAY ERROR STATUS: " 
+              WS-TODAY-STATUS
+              " GLCC: "
+              GLIF-CLASS-CODE
+              MOVE 0 TO TODAY-MONEY
+           END-IF
+           MOVE TODAY-MONEY TO TODAY-9.
+           EXIT.
+       DATABASE-CONNECT.
+           EXEC SQL
+               CONNECT :ORACLE-ID
+           END-EXEC.
+           EXIT.
+       OPEN-FILE.
+           OPEN INPUT YESTERDAY
+           IF NOT WS-YESTERDAY-ACCEPTABLE
+              DISPLAY "OPEN FILE YESTERDAY ERROR STATUS: " 
+              WS-YESTERDAY-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF
+           OPEN INPUT TODAY
+           IF NOT WS-TODAY-ACCEPTABLE
+              DISPLAY "OPEN FILE TODAY ERROR STATUS: " 
+              WS-TODAY-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF
+           OPEN OUTPUT WRONGGLCC
+           IF NOT WS-WRONGGLCC-ACCEPTABLE
+              DISPLAY "OPEN FILE WRONGGLCC ERROR STATUS: " 
+              WS-WRONGGLCC-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       ERR-STOP-RUN.
+           ACCEPT ORACLE-ID
+           STOP RUN.
+       GET-TODAY-DATE.
+           MOVE 1 TO UT1999CA-CALL-CODE
+           CALL "UT1999" USING UT1999CA-CALL-AREA
+           MOVE UT1999CA-CCYYMMDD TO UT0030-DATE-CCYYMMDD
+           MOVE 2 TO UT0030-FUNCTION
+           CALL "UT0030" USING UT0030-FUNCTION
+                               UT0030-DATE-AREA
+                               UT0030-BINARY-DATE
+           MOVE UT0030-BINARY-DATE TO TODAY-DATE
+           MOVE TODAY-DATE(5:5) TO TODAY-BIN.
+           EXIT.
