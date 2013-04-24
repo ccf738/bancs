@@ -82,11 +82,47 @@
        GET-SUM-FROM-GLIF.
            EXEC SQL
                DECLARE SUMCUR CURSOR FOR
-               SELECT GL_CLASS_CODE,SUM(LCY_AMT)
-               FROM GLIF WHERE SUBSTR(GL_CLASS_CODE,17,8) NOT IN 
+               SELECT GL_CLASS_CODE,
+                (CASE WHEN SUBSTR(GLIF.GL_CLASS_CODE,9,3) IN ('601',
+                '602',
+                '603',
+                '604',
+                '605',
+                '618',
+                '701',
+                '702',
+                '704',
+                '709',
+                '711',
+                '801',
+                '802',
+                '803',
+                '804',
+                '805',
+                '818',
+                '901',
+                '902',
+                '904',
+                '909',
+                '911',
+                '930',
+                '705',
+                '706',
+                '730',
+                '740',
+                '750',
+                '905',
+                '906',
+                '930',
+                '940',
+                '950') THEN SUM(LCY_AMT)*-1
+                ELSE
+                SUM(LCY_AMT)
+                END)
+                FROM GLIF WHERE SUBSTR(GL_CLASS_CODE,17,8) NOT IN 
                ('00000000','11111111')
                AND SUBSTR(KEY_1,5,5)
-               = :TODAY-BIN 
+               = :TODAY-BIN
                GROUP BY GL_CLASS_CODE
            END-EXEC
            EXEC SQL  
@@ -103,7 +139,8 @@
            PERFORM GET-YESTERDAY-MONEY
            PERFORM GET-TODAY-MONEY
            COMPUTE D-VALUE-9 = TODAY-9 - YESTERDAY-9
-           IF D-VALUE-9 NOT = GLIF-MONEY
+           IF (D-VALUE-9 NOT = GLIF-MONEY) AND
+               ((TODAY-9 + YESTERDAY-9) NOT = 0)
               MOVE 'N' TO SAME-MONEY
            END-IF.
            EXIT.
