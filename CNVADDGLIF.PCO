@@ -1,0 +1,173 @@
+       IDENTIFICATION DIVISION.
+            PROGRAM-ID. CNVCKGL.
+       ENVIRONMENT DIVISION.
+           INPUT-OUTPUT SECTION.
+               FILE-CONTROL.
+                   SELECT ADDGLIF ASSIGN TO EXTERNAL ADDGLIF
+                   ORGANIZATION LINE SEQUENTIAL
+                   FILE STATUS IS WS-ADDGLIF-STATUS.
+       DATA DIVISION.
+          FILE SECTION.
+            FD ADDGLIF RECORDING MODE IS F.
+               01 ADDGLIF-REC.
+                  03 ADD-POST-DATE PIC 9(8).
+                  03 FILLER PIC X.
+                  03 ADD-JNL-NO PIC 9(9).
+                  03 FILLER PIC X.
+                  03 ADD-SEQ-NO PIC 9(2).
+                  03 FILLER PIC X.
+                  03 ADD-BRANCH-NO PIC X(5).
+                  03 FILLER PIC X.
+                  03 ADD-CLASS-CODE PIC 9(8).
+                  03 FILLER PIC X.
+                  03 ADD-TRAN-CODE PIC 9(6).
+                  03 FILLER PIC X.
+                  03 ADD-AMT PIC Z(13)9.9(3)-.
+            WORKING-STORAGE SECTION.
+            COPY UT1999CA IN LIBRYMIS.
+            COPY UT0030CA IN LIBRYMIS.
+            01 ROWS-INSERTED PIC 9(2).
+            01 FIRST-SEQ PIC 9(2).
+            01 SECOND-SEQ PIC 9(2).
+            01 NUMBER-OF-RECORDS PIC 9(2) VALUE 0.
+            01 I PIC 9(2) VALUE 1.
+            01 TODAY-DATE-BIN PIC X(9).
+            01 WS-ADDGLIF-STATUS PIC 9(2) VALUE 00.
+               88 WS-ADDGLIF-SECUSSFUL VALUE 00.
+               88 WS-ADDGLIF-EOF       VALUE 10.
+               88 WS-ADDGLIF-ACCEPTABLE VALUE 00 10.
+            EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+                01 GLIF-DATA OCCURS 100 TIMES VALUE SPACE.
+                   03 GLIF-KEY-1 PIC X(39).
+                   03 GLIF-SOC PIC X(3).
+                   03 GLIF-BRCH PIC X(5).
+                   03 GLIF-FCY-CODE PIC X(3).
+                   03 GLIF-GL-CLASS-CODE PIC X(25).
+                   03 GLIF-DESCRIPTION          PIC X(30).
+                   03 GLIF-POSTING-IND          PIC X(1).   
+                   03 GLIF-TRANS-DATE           PIC 9(9).   
+                   03 GLIF-LCY-AMT              PIC S9(14)V9(3).
+                   03 GLIF-FCY-AMT              PIC S9(14)V9(3).
+                   03 GLIF-REVERSAL-CODE        PIC X(1).   
+                   03 GLIF-REVERSAL-DATE        PIC 9(9).   
+                   03 GLIF-GLIF-REFERENCES      PIC X(16). 
+                   03 GLIF-SOURCE-APPLN         PIC X(3).   
+                   03 GLIF-PS-JOURNAL-ID        PIC X(10).  
+                   03 GLIF-PS-JOURNAL-NBR       PIC 9(9).   
+                   03 GLIF-CNTL-CENTRE          PIC X(5).   
+                   03 GLIF-LCY-NPV-AMT          PIC S9(14)V9(3).
+                   03 GLIF-FCY-NPV-AMT          PIC S9(14)V9(3).
+                   03 GLIF-PROFIT-CNTR-NARR     PIC X(16).  
+                   03 GLIF-ERROR-NO             PIC X(1).   
+                   03 GLIF-CORRECTION-TYPE      PIC X(1).   
+                   03 GLIF-FIL01                PIC X(70).
+            EXEC SQL END DECLARE SECTION END-EXEC.
+            EXEC SQL
+                 INCLUDE SQLCA
+            END-EXEC.
+       PROCEDURE DIVISION.
+           PERFORM OPEN-FILE
+           PERFORM GET-DATE
+           PERFORM GET-DATA-FOR-INSERT
+           PERFORM VALIDATE-DATA
+           PERFORM INSERT-INTO-GLIF
+           STOP RUN.
+       GET-DATA-FOR-INSERT.
+           PERFORM READ-ADDGLIF
+           PERFORM UNTIL WS-ADDGLIF-EOF
+               INITIALIZE GLIF-DATA(I)
+               MOVE ADD-POST-DATE TO UT0030-DATE-CCYYMMDD
+               MOVE 2 TO UT0030-FUNCTION
+               CALL "UT0030" USING UT0030-FUNCTION
+                                   UT0030-DATE-AREA
+                                   UT0030-BINARY-DATE
+               MOVE UT0030-BINARY-DATE TO GLIF-KEY-1(I)(1:9)
+               MOVE TODAY-DATE-BIN TO GLIF-KEY-1(I)(10:9)
+               MOVE '0' TO GLIF-KEY-1(I)(19:1)
+               MOVE FUNCTION CURRENT-DATE(9:8) TO GLIF-KEY-1(I)(20:8)
+               MOVE 'S' TO GLIF-KEY-1(I)(28:1)
+               MOVE ADD-JNL-NO TO GLIF-KEY-1(I)(29:9)
+               MOVE ADD-SEQ-NO TO GLIF-KEY-1(I)(38:2)
+               MOVE ADD-BRANCH-NO TO GLIF-BRCH(I)
+               MOVE ADD-BRANCH-NO TO GLIF-GL-CLASS-CODE(I)(1:5)
+               MOVE 'CNY' TO GLIF-GL-CLASS-CODE(I)(6:3)
+               MOVE ADD-CLASS-CODE TO GLIF-GL-CLASS-CODE(I)(9:8)
+               MOVE '00000000 ' TO GLIF-GL-CLASS-CODE(I)(17:9)
+               MOVE ADD-TRAN-CODE TO GLIF-DESCRIPTION(I)(1:6)
+               MOVE ADD-AMT TO GLIF-LCY-AMT(I)
+               ADD 1 TO I
+               PERFORM READ-ADDGLIF
+           END-PERFORM.
+           INITIALIZE GLIF-DATA(I)
+           COMPUTE NUMBER-OF-RECORDS = I - 1.
+           EXIT.
+       VALIDATE-DATA.
+           MOVE 1 TO I
+           PERFORM UNTIL I > NUMBER-OF-RECORDS
+               IF GLIF-KEY-1(I)(1:9) NOT = GLIF-KEY-1(I + 1)(1:9) OR
+                  GLIF-KEY-1(I)(29:9) NOT = GLIF-KEY-1(I + 1)(29:9) OR
+                  GLIF-BRCH(I) NOT = GLIF-BRCH(I + 1) OR 
+                   (GLIF-LCY-AMT(I) + GLIF-LCY-AMT(I + 1)) NOT = 0 OR 
+                   GLIF-KEY-1(I + 1) = SPACES
+                  DISPLAY GLIF-DATA(I)(1:74)
+                  DISPLAY GLIF-DATA(I + 1)(1:74)
+                  DISPLAY "NOT CORRECT NOT INSERT INTO GLIF"
+                  INITIALIZE GLIF-DATA(I)
+                  INITIALIZE GLIF-DATA(I + 1)
+               END-IF
+               MOVE GLIF-KEY-1(I)(38:2) TO FIRST-SEQ
+               MOVE GLIF-KEY-1(I + 1)(38:2) TO SECOND-SEQ
+               IF (SECOND-SEQ - FIRST-SEQ) NOT = 1 OR
+                     FIRST-SEQ NOT = 1
+                  DISPLAY GLIF-DATA(I)(1:74)
+                  DISPLAY GLIF-DATA(I + 1)(1:74)
+                  DISPLAY "NOT CORRECT NOT INSERT INTO GLIF"
+                  INITIALIZE GLIF-DATA(I)
+                  INITIALIZE GLIF-DATA(I + 1)
+               END-IF
+               ADD 2 TO I
+           END-PERFORM.
+           EXIT.
+       READ-ADDGLIF.
+           READ ADDGLIF
+           IF NOT WS-ADDGLIF-ACCEPTABLE
+              DISPLAY "READ FILE ADDGLIF STATUS: " 
+                        WS-ADDGLIF-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       ERR-STOP-RUN.
+           ACCEPT WS-ADDGLIF-STATUS
+           STOP RUN.
+       OPEN-FILE.
+           OPEN INPUT ADDGLIF
+           IF NOT WS-ADDGLIF-ACCEPTABLE
+              DISPLAY "OPEN FILE ADDGLIF STATUS: " 
+                        WS-ADDGLIF-STATUS
+              GO TO ERR-STOP-RUN
+           END-IF.
+           EXIT.
+       GET-DATE.
+           MOVE 1 TO UT1999CA-CALL-CODE
+           CALL "UT1999" USING UT1999CA-CALL-AREA
+           MOVE UT1999CA-CCYYMMDD TO UT0030-DATE-CCYYMMDD
+           MOVE 2 TO UT0030-FUNCTION
+           CALL "UT0030" USING UT0030-FUNCTION
+                               UT0030-DATE-AREA
+                               UT0030-BINARY-DATE
+           MOVE UT0030-BINARY-DATE TO TODAY-DATE-BIN.
+           EXIT.
+       INSERT-INTO-GLIF.
+           EXEC SQL
+               INSERT INTO GLIF VALUES (:GLIF-DATA)
+           END-EXEC.
+           COMPUTE ROWS-INSERTED = SQLERRD(3) - 1
+           DISPLAY ROWS-INSERTED  " ROWS INSERTED INTO GLIF"
+           EXEC SQL
+               DELETE FROM GLIF WHERE KEY_1 = ' '
+           END-EXEC.
+           EXEC SQL
+               COMMIT
+           END-EXEC.
+           
+           
