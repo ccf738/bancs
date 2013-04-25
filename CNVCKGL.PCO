@@ -620,6 +620,7 @@ CCFTST     PERFORM OPEN-FILE
                SUBSTR(GLIF.KEY_1,5,5) = JR01.POST_DATE
                AND SUBSTR(GLIF.KEY_1,29,9) = JR01.JRNL_NO
                AND SUBSTR(GLIF.KEY_1,38,2) = JR01.SEQUENCE_NO
+               AND SUBSTR(GLIF.KEY_1,20,8) = JR01.JR01_TIME
                WHERE SUBSTR(GLIF.GL_CLASS_CODE,9,8) IN 
                ('40502000','40503000') AND 
                SUBSTR(GLIF.KEY_1,5,5) = :TODAY-BIN
@@ -1106,14 +1107,17 @@ CCFTST     PERFORM OPEN-FILE
                ADD 1 TO RECORDS-NUM
                MOVE CKGLCARD-CLASS-CODE TO CARD-CLASS-CODE(RECORDS-NUM)
                MOVE CKGLCARD-DATE TO CARD-DATE(RECORDS-NUM)
-               MOVE CKGLCARD-DATE TO UT0030-DATE-CCYYMMDD
-               MOVE 2 TO UT0030-FUNCTION
-               CALL "UT0030" USING UT0030-FUNCTION
-                                   UT0030-DATE-AREA
-                                   UT0030-BINARY-DATE
-               MOVE UT0030-BINARY-DATE TO TODAY-DATE
-               MOVE TODAY-DATE(5:5) TO CARD-DATE-BIN(RECORDS-NUM)
-               MOVE CARD-DATE-BIN(1) TO TODAY-BIN
+               IF CKGLCARD-DATE NOT NUMERIC
+                  MOVE TODAY-BIN TO CARD-DATE-BIN(RECORDS-NUM)
+               ELSE
+                  MOVE CKGLCARD-DATE TO UT0030-DATE-CCYYMMDD
+                  MOVE 2 TO UT0030-FUNCTION
+                  CALL "UT0030" USING UT0030-FUNCTION
+                                      UT0030-DATE-AREA
+                                      UT0030-BINARY-DATE
+                  MOVE UT0030-BINARY-DATE TO TODAY-DATE
+                  MOVE TODAY-DATE(5:5) TO CARD-DATE-BIN(RECORDS-NUM)
+               END-IF
                PERFORM READ-CKGLCARD
            END-PERFORM.
            EXIT.
