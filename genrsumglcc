@@ -1,0 +1,53 @@
+#!/bin/ksh
+today_date=`cut -c 9-16 $data/file/MFLAGS`
+export DD_GLBM=$data/glif/${today_date}GLBM
+run.sh -t CNVSUMGLCC
+yesd=`cut -c 15-16 $data/file/MFLAGS`
+yesd=$((yesd-1))
+len=`expr length $yesd`
+if [ $len -eq "1" ];then
+    yesd=0$yesd
+fi
+yesm=`cut -c 13-14 $data/file/MFLAGS`
+yesy=`cut -c 9-12 $data/file/MFLAGS`
+yesterday_date=$yesy$yesm$yesd
+if [ $yesd -eq "0" ]; then
+    yesd=31
+    yesm=$((yesm-1))
+    if [ $yesm -eq "0" ]; then
+        yesm=12
+        yesy=$((yesy-1))
+    fi
+    yesterday_date=$yesy$yesm$yesd
+fi
+echo $yesterday_date
+if [ ! -e $data/glif/${yesterday_date}GLBM ];then
+    yesterday_date=$((yesterday_date-1))
+    if [ ! -e $data/glif/${yesterday_date}GLBM ];then
+        yesterday_date=$((yesterday_date-1))
+        if [ ! -e $data/glif/${yesterday_date}GLBM ];then
+            yesterday_date=$((yesterday_date-1))
+            if [ ! -e $data/glif/${yesterday_date}GLBM ];then
+                echo "there is no yesterday's sum glcc file please run again tomorrow"
+                exit 0
+            fi
+        fi
+    fi 
+fi
+echo "yesterday: " $yesterday_date
+export DD_YESTERDAY=$data/glif/${yesterday_date}GLBM
+export DD_TODAY=$data/glif/${today_date}GLBM
+export DD_WRONGGLCC=$data/glif/${today_date}WRONGGLCC
+export DD_MFLAGS=$data/file/MFLAGS
+cmd="run.sh -t"
+while getopts bdft c ; do
+   case $c in
+      b) cmd="run.sh -b" ;;
+      d) cmd="run.sh -d";;
+      f) cmd="run.sh -f";;
+      t) cmd="run.sh -t";;
+   esac
+done
+shift `expr $OPTIND - 1`
+$cmd CNVVALGLCC
+cat $data/glif/${today_date}WRONGGLCC
