@@ -1,0 +1,268 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    CNVINVM.
+       AUTHOR.        LG.
+       ENVIRONMENT    DIVISION.
+       INPUT-OUTPUT   SECTION.
+       FILE-CONTROL.
+      *
+           SELECT CARDFILE      ASSIGN       TO "/fns/d/r/card/bgl.card"
+                                ORGANIZATION LINE SEQUENTIAL
+                                FILE STATUS  IS WS-CARDFILE-STATUS.
+           SELECT RESULT        ASSIGN       TO EXTERNAL RESULT
+                                FILE STATUS  IS WS-RESULT-STATUS. 
+      *
+       DATA DIVISION.
+       FILE SECTION.
+      *
+       FD CARDFILE     RECORDING MODE IS F. 
+       01 CARDFILE-REC.
+          03 CARD-ACCT-NO PIC X(16).
+          03 FILLER PIC X.
+          03 CARD-FROM-DATE PIC X(8).
+          03 FILLER PIC X.
+          03 CARD-TO-DATE PIC X(8).
+       FD  RESULT         RECORDING MODE IS F. 
+       01 RESULT-REC.
+          03 TRAN-TYPE PIC 99.
+          03 FILLER PIC X.
+          03 TRAN-STATUS PIC 99.
+          03 FILLER PIC X.
+          03 TRAN-DATE PIC X(8).
+          03 FILLER PIC X.
+          03 TRAN-BRANCH PIC 9(5).
+          03 FILLER PIC X.
+          03 TRAN-TERM PIC 9(3).
+          03 FILLER PIC X.
+          03 TRAN-TELLER PIC 9(7).
+          03 FILLER PIC X.
+          03 TRAN-CODE PIC 9(7).
+          03 FILLER PIC X.
+          03 TRAN-POST-DATE PIC X(8).
+          03 FILLER PIC X.
+          03 TRAN-JRNL-NO PIC 9(9).
+          03 FILLER PIC X.
+          03 TRAN-AMT PIC -9(14).9(3).
+          03 FILLER PIC X.
+          03 TRAN-BALANCE PIC -9(14).9(3).
+          03 FILLER PIC X.
+          03 TRAN-BTCH-NO PIC X(2).
+          03 FILLER PIC X.
+          03 TRAN-IS-CORRECTION PIC 9.
+          03 FILLER PIC X(30).
+          03 TRAN-END PIC X.
+       WORKING-STORAGE SECTION.
+       01 I PIC 999.
+       01 WS-FILE-STS-AREA.
+          03 WS-CARDFILE-STATUS             PIC 9(02)    VALUE 00.
+             88 WS-CARDFILE-SUCCESSFUL      VALUE 00.
+             88 WS-CARDFILE-EOF             VALUE 10.
+             88 WS-CARDFILE-ACCEPTABLE      VALUE 00 10.
+          03 WS-RESULT-STATUS                 PIC 9(02)    VALUE 00.
+             88 WS-RESULT-SUCCESSFUL          VALUE 00.
+             88 WS-RESULT-EOF                 VALUE 10.
+             88 WS-RESULT-ACCEPTABLE          VALUE 00 10.
+       01 TO-SEARCH OCCURS 99 TIMES VALUE SPACE.
+          03 SEARCH-ACCT PIC X(16).
+          03 SEARCH-FROM-DATE PIC X(8).
+          03 SEARCH-FROM-DATE-BIN PIC 9(9).
+          03 SEARCH-TO-DATE PIC X(8).
+          03 SEARCH-TO-DATE-BIN PIC 9(9).
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+           01 TABLE-ACCT PIC X(16).
+           01 TABLE-FROM-DATE PIC 9(9).
+           01 TABLE-TO-DATE PIC 9(9).
+           01 TABLE-WHOLE-RECORD.
+              03 TEMP-INST-NO           PIC X(3).
+              03 TEMP-ACCT-NO           PIC X(16).
+              03 TEMP-REC-NO            PIC X(9).
+              03 TEMP-TRAN-TYPE         PIC X(2).
+              03 TEMP-STAT              PIC X(2).
+              03 TEMP-POST-DATE         PIC 9(9).
+              03 TEMP-TRN-DATE          PIC 9(9).
+              03 TEMP-SYSTEM-DATE       PIC 9(9).
+              03 TEMP-SYSTEM-TIME       PIC 9(9).
+              03 TEMP-TELL-AND-BR       PIC 9(12).
+              03 TEMP-JRNL-NO           PIC 9(9).
+              03 TEMP-TRN-CODE          PIC 9(7).
+              03 TEMP-BRTERM            PIC 9(3).
+              03 TEMP-CHANNEL           PIC X(1).
+              03 TEMP-DELI              PIC X(1).
+              03 TEMP-VAR-AREA          PIC X(254).
+           EXEC SQL END DECLARE SECTION END-EXEC.
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC.
+       COPY UT0030CA IN LIBRYMIS.
+       COPY UT0020CA IN LIBRYMIS.
+       01 GECT-RECORD-AREA.
+          COPY GECTVARV IN LIBRYGEN
+          REPLACING ==(GECT)== BY ==GECT==.
+       01 DLDV-RECORD-AREA.
+          COPY GLDVVARV IN LIBRYGEN.
+      ******************************************
+       PROCEDURE DIVISION.
+           PERFORM OPEN-FILE
+           PERFORM GET-SEARCH-DETAILS
+           PERFORM WRITE-BGL-DETAILS
+           PERFORM CLOSE-FILE
+           STOP RUN.
+       WRITE-BGL-DETAILS.
+           PERFORM CREATE-FILE-HEAD
+           MOVE 1 TO I
+           PERFORM UNTIL SEARCH-ACCT(I)(1:1) NOT = '9'
+               PERFORM CREATE-RECORD-HEAD
+               MOVE SEARCH-ACCT(I) TO TABLE-ACCT
+               MOVE SEARCH-FROM-DATE-BIN(I) TO TABLE-FROM-DATE
+               MOVE SEARCH-TO-DATE-BIN(I) TO TABLE-TO-DATE
+               EXEC SQL DECLARE BGLCUR CURSOR FOR
+                SELECT * FROM GECT WHERE 
+                TRN_DATE BETWEEN :TABLE-FROM-DATE AND :TABLE-TO-DATE
+                 AND ACCT_NO=:TABLE-ACCT 
+                 ORDER BY TRN_DATE,JRNL_NO
+               END-EXEC
+               EXEC SQL
+                   OPEN BGLCUR
+               END-EXEC
+               EXEC SQL 
+                   FETCH BGLCUR INTO :TABLE-WHOLE-RECORD
+               END-EXEC
+               PERFORM UNTIL SQLCODE NOT = 0
+                   PERFORM WRITE-THIS-RECORD
+                   EXEC SQL 
+                       FETCH BGLCUR INTO :TABLE-WHOLE-RECORD
+                   END-EXEC
+                   DISPLAY SQLCODE
+               END-PERFORM
+               ADD 1 TO I
+           END-PERFORM
+           EXIT.
+       WRITE-THIS-RECORD.
+           MOVE SPACES TO  RESULT-REC
+           MOVE TEMP-TRAN-TYPE TO TRAN-TYPE
+           MOVE TEMP-STAT TO TRAN-STATUS
+      *
+           MOVE TEMP-TRN-DATE TO UT0020-BINARY-DATE
+           MOVE 1 TO UT0020-FUNCTION
+           CALL "UT0020" USING UT0020-FUNCTION
+                               UT0020-DATE-AREA
+                               UT0020-BINARY-DATE
+           MOVE UT0020-DATE-DDMMCCYY(1:2) TO TRAN-DATE(7:2)
+           MOVE UT0020-DATE-DDMMCCYY(3:2) TO TRAN-DATE(5:2)
+           MOVE UT0020-DATE-DDMMCCYY(5:4) TO TRAN-DATE(1:4)
+      *
+           DIVIDE 100000 INTO TEMP-TELL-AND-BR GIVING TRAN-TELLER
+           REMAINDER TRAN-BRANCH
+      *
+           MOVE TEMP-BRTERM TO TRAN-TERM
+           MOVE TEMP-TRN-CODE TO TRAN-CODE
+      *
+           MOVE TEMP-POST-DATE TO UT0020-BINARY-DATE
+           MOVE 1 TO UT0020-FUNCTION
+           CALL "UT0020" USING UT0020-FUNCTION
+                               UT0020-DATE-AREA
+                               UT0020-BINARY-DATE
+           MOVE UT0020-DATE-DDMMCCYY(1:2) TO TRAN-POST-DATE(7:2)
+           MOVE UT0020-DATE-DDMMCCYY(3:2) TO TRAN-POST-DATE(5:2)
+           MOVE UT0020-DATE-DDMMCCYY(5:4) TO TRAN-POST-DATE(1:4)
+      *
+           MOVE TEMP-JRNL-NO TO TRAN-JRNL-NO
+           MOVE TEMP-VAR-AREA TO DLDV-RECORD-AREA
+           IF TRAN-TYPE = 1
+              MOVE GLDV-01-AMOUNT TO TRAN-AMT
+              MOVE GLDV-01-BTCH-NO TO TRAN-BTCH-NO
+              MOVE GLDV-01-CORRECTION TO TRAN-IS-CORRECTION
+              MOVE GLDV-01-GLDM-BALANCE TO TRAN-BALANCE
+           END-IF
+           IF TRAN-TYPE = 20
+               MOVE GLDV-20-CHQ-PAYEE TO RESULT-REC(61:50)
+           END-IF
+           IF TRAN-TYPE = 21
+               MOVE GLDV-21-MESSAGE-TEXT  TO RESULT-REC(61:40)
+           END-IF
+           IF TRAN-TYPE = 36
+               MOVE GLDV-36-ACCOUNT-NO TO RESULT-REC(61:19)
+           END-IF
+           PERFORM WRITE-RESULT.
+           EXIT.
+       CREATE-RECORD-HEAD.
+           MOVE SPACE TO  RESULT-REC
+           STRING "HERE IS FOR ACCOUNT: "
+                  SEARCH-ACCT(I)
+                  " FROM "
+                  SEARCH-FROM-DATE(I)
+                  " TO "
+                  SEARCH-TO-DATE(I)
+                  "----------------------------"
+                  DELIMITED BY SIZE INTO RESULT-REC
+           PERFORM WRITE-RESULT.
+           EXIT.
+       CREATE-FILE-HEAD.
+           MOVE SPACE TO  RESULT-REC
+           STRING "TP|"
+                  "ST|"
+                  "TRN-DATE|"
+                  "BRACH|"
+                  "TRM|"
+                  "TELLER |"
+                  "TRCODE |"
+                  "POSTDATE|"
+                  "JRNL-NO  | "
+                  "TRAN-AMT          |"
+                  "TRAN-BALANCE       |"
+                  "BH|"
+                  "C|"
+           DELIMITED BY SIZE INTO RESULT-REC
+           PERFORM WRITE-RESULT.
+           EXIT.
+       GET-SEARCH-DETAILS.
+           MOVE 0 TO I
+           READ CARDFILE
+           PERFORM UNTIL WS-CARDFILE-EOF
+               ADD 1 TO I
+               MOVE CARD-ACCT-NO TO SEARCH-ACCT(I)
+               MOVE CARD-FROM-DATE TO SEARCH-FROM-DATE(I)
+               MOVE CARD-TO-DATE TO SEARCH-TO-DATE(I)
+               MOVE CARD-FROM-DATE TO UT0030-DATE-CCYYMMDD
+               MOVE 2 TO UT0030-FUNCTION
+               CALL "UT0030" USING UT0030-FUNCTION
+                                   UT0030-DATE-AREA
+                                   UT0030-BINARY-DATE
+               MOVE UT0030-BINARY-DATE TO SEARCH-FROM-DATE-BIN(I)
+               MOVE CARD-TO-DATE TO UT0030-DATE-CCYYMMDD
+               MOVE 2 TO UT0030-FUNCTION
+               CALL "UT0030" USING UT0030-FUNCTION
+                                   UT0030-DATE-AREA
+                                   UT0030-BINARY-DATE
+               MOVE UT0030-BINARY-DATE TO SEARCH-TO-DATE-BIN(I)
+               READ CARDFILE
+           END-PERFORM.
+           EXIT.
+       WRITE-RESULT.
+           MOVE X'0A' TO TRAN-END
+           WRITE RESULT-REC
+           IF NOT WS-RESULT-ACCEPTABLE
+              DISPLAY "WRITE RESULT FILE FAILD STATUS:" WS-RESULT-STATUS
+              ACCEPT I
+              STOP RUN.
+       CLOSE-FILE.
+           CLOSE CARDFILE
+           IF NOT WS-CARDFILE-ACCEPTABLE
+              DISPLAY "CLOSE CARD FILE FAILD STATUS:" WS-CARDFILE-STATUS
+              ACCEPT I
+              STOP RUN.
+           CLOSE RESULT
+           IF NOT WS-RESULT-ACCEPTABLE
+              DISPLAY "CLOSE RESULT FILE FAILD STATUS:" WS-RESULT-STATUS
+              ACCEPT I
+              STOP RUN.
+       OPEN-FILE.
+           OPEN INPUT CARDFILE
+           IF NOT WS-CARDFILE-ACCEPTABLE
+              DISPLAY "OPEN CARD FILE FAILD STATUS:" WS-CARDFILE-STATUS
+              ACCEPT I
+              STOP RUN.
+           OPEN OUTPUT RESULT
+           IF NOT WS-RESULT-ACCEPTABLE
+              DISPLAY "OPEN RESULT FILE FAILD STATUS:" WS-RESULT-STATUS
+              ACCEPT I
+              STOP RUN.
