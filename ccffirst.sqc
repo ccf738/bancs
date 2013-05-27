@@ -1,0 +1,23 @@
+#include<stdio.h>
+#include<sqlenv.h>
+#include<sqlcodes.h>
+#include<sqlca.h>
+int main(void)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char brName[71];
+    EXEC SQL END DECLARE SECTION;
+    struct sqlca sqlca;
+    EXEC SQL CONNECT TO BAND5; 
+    EXEC SQL DECLARE BRCUR CURSOR FOR
+     SELECT BR_NAME FROM BRHM;
+    EXEC SQL OPEN BRCUR;
+    EXEC SQL FETCH BRCUR INTO :brName;
+    while(sqlca.sqlcode == 0)
+    {
+        puts(brName);
+        EXEC SQL FETCH BRCUR INTO :brName;
+    }
+    return 0;
+}
+       
