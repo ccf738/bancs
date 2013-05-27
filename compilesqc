@@ -1,0 +1,61 @@
+#! /bin/sh
+#############################################################################
+# Licensed Materials - Property of IBM
+#
+# Governed under the terms of the International
+# License Agreement for Non-Warranted Sample Code.
+#
+# (C) COPYRIGHT International Business Machines Corp. 1995 - 2006
+#  All Rights Reserved.
+#
+#  US Government Users Restricted Rights - Use, duplication or
+#  disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#############################################################################
+# SCRIPT: bldapp
+# Builds AIX C application programs
+# Usage: bldapp <prog_name> [ <db_name> [ <userid> <password> ]]
+
+# Set DB2PATH to where DB2 will be accessed.
+# The default is the standard instance path.
+DB2PATH=/home/db2insd5/sqllib
+
+bitwidth=64
+
+# Uncomment the following line to compile 32-bit applications
+#bitwidth=32
+
+if [ $bitwidth = "32" ]; then
+  LIB=lib32
+  EXTRA_CFLAG=
+else
+  LIB=lib64
+  EXTRA_CFLAG=-q64
+fi
+
+# If an embedded SQL program, precompile and bind it.
+# Note: some .sqc files contain no SQL but link in 
+# utilemb.sqc, so if you get this warning, ignore it:
+# SQL0053W  No SQL statements were found in the program.
+if [ -f $1".sqc" ]
+then
+  embprep $1
+  # Compile the utilemb.c error-checking utility.
+#  xlc $EXTRA_CFLAG -I$DB2PATH/include -c utilemb.c
+#else
+#  # Compile the utilapi.c error-checking utility.
+#  xlc $EXTRA_CFLAG -I$DB2PATH/include -c utilapi.c
+fi
+
+# Compile the program.
+xlc $EXTRA_CFLAG -I$DB2PATH/include -c $1.c
+
+if [ -f $1".sqc" ]
+then
+  # Link the program with utilemb.o
+  xlc $EXTRA_CFLAG -o $1 $1.o utilemb.o -ldb2 -L$DB2PATH/$LIB
+else
+  # Link the program with utilapi.o
+  xlc $EXTRA_CFLAG -o $1 $1.o -ldb2 -L$DB2PATH/$LIB
+fi
+db2 connect to BAND5
+db2 "bind $1.bnd"
