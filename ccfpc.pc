@@ -1,0 +1,29 @@
+#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+#include<sqlda.h>
+#include<sqlcpr.h>
+#include<sqlca.h>
+int main(void)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char brName[71];
+    EXEC SQL END DECLARE SECTION;
+    int number = 0;
+    *char user = "linkusr";
+    char *pass = "linkusr";
+    EXEC SQL CONNECT :user IDENTIFIED BY :pass;
+    EXEC SQL DECLARE NAMECUR CURSOR FOR 
+        SELECT BR_NAME FROM BRHM;
+    EXEC SQL OPEN NAMECUR;
+    EXEC SQL FETCH NAMECUR INTO :brName;
+    printf("fetch code:%d\n",sqlca.sqlcode);
+    while(sqlca.sqlcode == 0)
+    {
+        number++;
+        puts(brName);
+        EXEC SQL FETCH NAMECUR INTO :brName;
+    }
+    printf("records in brhm:%d\n",number);
+    return 0;
+}
